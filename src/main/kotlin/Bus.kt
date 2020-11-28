@@ -1,5 +1,6 @@
 import cpu.CPU
 
+@ExperimentalUnsignedTypes
 class Bus(
         cpu: CPU
 ) {

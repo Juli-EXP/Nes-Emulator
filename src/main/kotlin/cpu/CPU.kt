@@ -2,6 +2,7 @@ package cpu
 
 import Bus
 
+@ExperimentalUnsignedTypes
 class CPU {
     //Other devices
     private lateinit var bus: Bus

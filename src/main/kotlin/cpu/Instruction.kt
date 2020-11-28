@@ -1,5 +1,6 @@
 package cpu
 
+@ExperimentalUnsignedTypes
 data class Instruction(
         val name: String,
         val opcode: () -> UByte,
@@ -7,7 +8,3 @@ data class Instruction(
         val cycles: UByte
 )
 
-fun main(){
-        print("Servus")
-        Thread.sleep(5000)
-}

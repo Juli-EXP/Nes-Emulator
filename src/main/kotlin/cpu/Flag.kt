@@ -35,8 +35,20 @@ class Flag {
             Flags.N -> n = value
         }
     }
+
+    fun reset() {
+        c = false
+        z = false
+        i = false
+        d = false
+        b = false
+        b = false
+        u = false
+        v = false
+        n = false
+    }
 }
 
-enum class Flags{
+enum class Flags {
     C, Z, I, D, B, U, V, N
 }

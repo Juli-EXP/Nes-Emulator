@@ -19,8 +19,8 @@ class CPU {
     private var fetched: UByte = 0u         //Fetched value
     private var cycles: UByte = 0u          //How many cycles are left
     private var absoluteAddress: UShort = 0u //Absolute address
-    private val relativeAddress: UShort = 0u //Relative address
-    private val clockCount: UInt = 0u       //Total clock count
+    private var relativeAddress: UShort = 0u //Relative address
+    private var clockCount: UInt = 0u       //Total clock count
 
 
     //Communication with the bus----------------------------------------------------------------------------------------
@@ -45,12 +45,50 @@ class CPU {
 
     //Resets the CPU
     private fun reset() {
+        //Set program counter
+        absoluteAddress = 0xFFFCu
 
+        val lo = read((absoluteAddress + 0u).toUShort())
+        val hi = read((absoluteAddress + 1u).toUShort())
+
+        pc = ((hi.toInt() shl 8) or lo.toInt()).toUShort()
+
+        //Reset registers
+        a = 0u
+        x = 0u
+        y = 0u
+        sp = 0xFDu
+        status.reset()
+
+        //Reset any other var
+        relativeAddress = 0u
+        absoluteAddress = 0u
+        fetched = 0u
+        //clockCount = 0u
+
+        cycles = 8u
     }
 
     //Performs one clock cycle
     private fun clockCycle() {
+        if (cycles.compareTo(0u) == 0) {
+            opcode = read(pc++)
 
+            //status.setFlag(Flags.U, true)
+
+            cycles = instructionTable[opcode.toInt()]!!.cycles
+
+            val additionalCycle1 = instructionTable[opcode.toInt()]!!.addressingMode()
+            val additionalCycle2 = instructionTable[opcode.toInt()]!!.instruction()
+
+            cycles = cycles.plus((additionalCycle1.toInt() and additionalCycle2.toInt()).toUByte()).toUByte()
+
+            //status.setFlag(Flags.U, true)
+        }
+
+        ++clockCount
+
+        --cycles
     }
 
     //Executes an instruction at a specific location
@@ -64,8 +102,9 @@ class CPU {
     }
 
     //Gets data depending on the current addressing mode
-    private fun fetch(): UByte {
-        return 0u
+    private fun fetch() {
+        if (instructionTable[opcode.toInt()]!!.addressingMode != this::imp)
+            fetched = read(absoluteAddress)
     }
 
 
@@ -251,62 +290,147 @@ class CPU {
     }
 
     //Absolute
+    //Uses a 16-bit address
     private fun abs(): UByte {
+        val lo = read(pc++).toInt()
+        val hi = read(pc++).toInt()
+
+        absoluteAddress = ((hi shl 8) or lo).toUShort()
+
         return 0u
     }
 
     //Absolute x
+    //Absolute with a offset of x
     private fun abx(): UByte {
+        val lo = read(pc++).toInt()
+        val hi = read(pc++).toInt()
+
+        absoluteAddress = ((hi shl 8) or lo).toUShort()
+        absoluteAddress = (absoluteAddress + x).toUShort()
+
+        if ((absoluteAddress.toInt() and 0xFF00) != hi shl 8) {
+            return 1u
+        }
+
         return 0u
     }
 
     //Absolute y
+    //Absolute with a offset of yf
     private fun aby(): UByte {
+        val lo = read(pc++).toInt()
+        val hi = read(pc++).toInt()
+
+        absoluteAddress = ((hi shl 8) or lo).toUShort()
+        absoluteAddress = (absoluteAddress + y).toUShort()
+
+        if ((absoluteAddress.toInt() and 0xFF00) != hi shl 8) {
+            return 1u
+        }
+
         return 0u
     }
 
     //Immediate
     private fun imm(): UByte {
+        absoluteAddress = pc++
+
         return 0u
     }
 
-    //Implicit
+    //Implied
     private fun imp(): UByte {
+        fetched = a
+
         return 0u
     }
 
     //Indirect
     private fun ind(): UByte {
+        val loPointer = read(pc++).toInt()
+        val hiPointer = read(pc++).toInt()
+
+        val pointer = ((hiPointer shl 8) or loPointer)
+
+        //simulating a hardware bug
+        absoluteAddress = if (loPointer == 0x00FF) {
+            val hi = read((pointer and 0xFF00).toUShort()).toInt()
+            val lo = read((pointer + 0).toUShort()).toInt()
+
+            ((hi shl 8) or lo).toUShort()
+        } else {
+            val hi = read((pointer + 1).toUShort()).toInt()
+            val lo = read((pointer + 0).toUShort()).toInt()
+
+            ((hi shl 8) or lo).toUShort()
+        }
+
         return 0u
     }
 
     //Indirect x
     private fun idx(): UByte {
+        val temp = read(pc++)
+
+        val lo = read(((temp + x).toInt() and 0x00FF).toUShort()).toInt()
+        val hi = read(((temp + x + 1u).toInt() and 0x00FF).toUShort()).toInt()
+
+        absoluteAddress = ((hi shl 8) or lo).toUShort()
+
         return 0u
     }
 
     //Indirect y
     private fun idy(): UByte {
+        val temp = read(pc++)
+
+        val lo = read((temp.toInt() and 0x00FF).toUShort()).toInt()
+        val hi = read(((temp + 1u).toInt() and 0x00FF).toUShort()).toInt()
+
+        absoluteAddress = ((hi shl 8) or lo).toUShort()
+        absoluteAddress = (absoluteAddress + y).toUShort()
+
+        if (absoluteAddress.toInt() and 0xFF00 != hi shl 8) {
+            return 1u
+        }
+
         return 0u
     }
 
     //Relative
     private fun rel(): UByte {
+        relativeAddress = read(pc++).toUShort()
+
+        //checks if number is bigger than 127
+        if (relativeAddress.toInt() and 0x80 != 0) {
+            relativeAddress = (relativeAddress.toInt() or 0xFF00).toUShort()
+        }
+
         return 0u
     }
 
     //Zero page
     private fun zpg(): UByte {
+        absoluteAddress = read(pc++).toUShort()
+        absoluteAddress = (absoluteAddress.toInt() and 0x00FF).toUShort()
+
         return 0u
     }
 
     //Zero page x
     private fun zpx(): UByte {
+        absoluteAddress = (read(pc++) + x).toUShort()
+        absoluteAddress = (absoluteAddress.toInt() and 0x00FF).toUShort()
+
         return 0u
     }
 
     //Zero page y
     private fun zpy(): UByte {
+        absoluteAddress = (read(pc++) + x).toUShort()
+        absoluteAddress = (absoluteAddress.toInt() and 0x00FF).toUShort()
+
         return 0u
     }
 
@@ -320,6 +444,10 @@ class CPU {
 
     //And with carry
     private fun adc(): UByte {
+        fetch()
+
+
+
         return 0u
     }
 

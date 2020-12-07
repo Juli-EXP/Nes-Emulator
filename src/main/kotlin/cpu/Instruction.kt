@@ -2,7 +2,7 @@ package cpu
 
 @ExperimentalUnsignedTypes
 data class Instruction(
-    val opcode: () -> UByte,
+    val instruction: () -> UByte,
     val addressingMode: () -> UByte,
     val cycles: UByte = 0u
 ){
@@ -15,6 +15,6 @@ data class Instruction(
     }
 
     override fun toString(): String {
-        return "Instr.: ${toInstructionString(opcode)}, Addr.: ${toInstructionString(addressingMode)}, cycles: $cycles"
+        return "Instr.: ${toInstructionString(instruction)}, Addr.: ${toInstructionString(addressingMode)}, cycles: $cycles"
     }
 }

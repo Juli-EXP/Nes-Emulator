@@ -2,7 +2,7 @@ import cpu.CPU
 
 @ExperimentalUnsignedTypes
 class Bus(
-        cpu: CPU
+    cpu: CPU
 ) {
 
     //fake ram

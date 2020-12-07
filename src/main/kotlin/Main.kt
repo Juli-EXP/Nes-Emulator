@@ -1,7 +1,6 @@
 import cpu.CPU
 import kotlin.jvm.JvmStatic
 
-@ExperimentalUnsignedTypes
 object Main {
     private var bus: Bus? = null
     private var cpu: CPU? = null

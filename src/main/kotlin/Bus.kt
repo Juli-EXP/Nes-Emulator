@@ -1,30 +1,29 @@
 import cpu.CPU
 
-@ExperimentalUnsignedTypes
 class Bus(
     cpu: CPU
 ) {
 
     //fake ram
-    private val ram: UByteArray
+    private val ram: IntArray
 
 
-    fun read(addr: UShort): UByte {
-        return if (addr >= 0u && addr <= 0xFFFF.toUByte())
-            ram[addr.toInt()]
+    fun read(addr: Int): Int {
+        return if (addr in 0..0xFFFF)
+            ram[addr]
         else
-            0u
+            0
     }
 
-    fun write(addr: UShort, data: UByte) {
-        if (addr >= 0u && addr <= 0xFFFF.toUByte())
-            ram[addr.toInt()] = data
+    fun write(addr: Int, data: Int) {
+        if (addr in 0..0xFFFF)
+            ram[addr] = data
     }
 
     init {
         //connect the cpu to the bus
         cpu.connectBus(this)
 
-        ram = UByteArray(0x10000)
+        ram = IntArray(0x10000)
     }
 }

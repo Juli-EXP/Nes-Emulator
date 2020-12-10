@@ -1,12 +1,11 @@
 package cpu
 
-@ExperimentalUnsignedTypes
 data class Instruction(
-    val instruction: () -> UByte,
-    val addressingMode: () -> UByte,
-    val cycles: UByte = 0u
+    val instruction: () -> Int,
+    val addressingMode: () -> Int,
+    val cycles: Int = 0
 ){
-    private fun toInstructionString(function: () -> UByte):String{
+    private fun toInstructionString(function: () -> Int):String{
         return function
             .toString()
             .substringAfter("CPU.")

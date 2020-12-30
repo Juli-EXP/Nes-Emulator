@@ -5,19 +5,19 @@ class Bus(
 ) {
 
     //fake ram
-    private val ram: IntArray
+    val ram: IntArray
 
 
     fun read(addr: Int): Int {
         return if (addr in 0..0xFFFF)
-            ram[addr]
+            ram[addr] and 0xFF
         else
             0
     }
 
     fun write(addr: Int, data: Int) {
         if (addr in 0..0xFFFF)
-            ram[addr] = data
+            ram[addr] = data and 0xFF
     }
 
     init {

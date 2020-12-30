@@ -14,6 +14,6 @@ data class Instruction(
     }
 
     override fun toString(): String {
-        return "Instr.: ${toInstructionString(instruction)}, Addr.: ${toInstructionString(addressingMode)}, cycles: $cycles"
+        return "instr: ${toInstructionString(instruction)}, mode: ${toInstructionString(addressingMode)}, cycles: $cycles"
     }
 }

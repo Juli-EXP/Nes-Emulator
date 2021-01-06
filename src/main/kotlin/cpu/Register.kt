@@ -50,20 +50,13 @@ class Register {
         n = false
     }
 
-    fun reduceRegisters() {
-        a = a and 0xFF
-        x = x and 0xFF
-        y = y and 0xFF
-        sp = sp and 0xFF
-        pc = pc and 0xFFFF
-    }
-
     override fun toString(): String {
         return "a: $a, x: $x, y: $y\n" +
-                "sp: $sp, pc: $pc\n" +
+                "${String.format("sp: 0x%04X", sp)}, " +
+                "${String.format("pc: 0x%04X", pc)}\n" +
                 "c: $c, z: $z, i: $i\n" +
                 "d: $d, b: $b, u: $u\n" +
-                "v: $v, b: $b\n"
+                "v: $v, b: $b"
     }
 
 

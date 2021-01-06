@@ -1,18 +1,16 @@
-import cpu.*
+import tornadofx.*
 
-
-private var bus: Bus? = null
-private var cpu: CPU? = null
-
-fun main() {
-    init()
-
-
+class Main : View("Nes-Emulator") {
+    override val root = borderpane {
+        top<TopView>()
+        bottom<BottomView>()
+    }
 }
 
-private fun init() {
-    cpu = CPU()
-    bus = Bus(cpu!!)
+class TopView: View() {
+    override val root = label("Top View")
+}
 
-
+class BottomView: View() {
+    override val root = label("Bottom View")
 }

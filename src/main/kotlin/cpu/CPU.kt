@@ -1,15 +1,13 @@
 package cpu
 
-import Bus
 import ext.toBoolean
 import ext.toInt
 
 
 class CPU {
-    //Other devices
-    private lateinit var bus: Bus
+    //variables---------------------------------------------------------------------------------------------------------
+    private lateinit var cpuBus: CPUBus
 
-    //CPU registers
     var registers = Register()
 
     var opcode: Int = 0             //Current opcode
@@ -24,18 +22,18 @@ class CPU {
     //Communication with the bus----------------------------------------------------------------------------------------
 
     //Connects the CPU to the bus
-    fun connectBus(bus: Bus) {
-        this.bus = bus
+    fun connectBus(cpuBus: CPUBus) {
+        this.cpuBus = cpuBus
     }
 
     //reads from the bus
     private fun read(addr: Int): Int {
-        return bus.read(addr)
+        return cpuBus.read(addr)
     }
 
     //writes to the bus
     private fun write(addr: Int, data: Int) {
-        bus.write(addr, data)
+        cpuBus.write(addr, data)
     }
 
 
@@ -66,7 +64,9 @@ class CPU {
         if (msg.isNotEmpty())
             debug = "$msg\n"
 
-        debug += String.format("op: 0x%02X", address) + ", ${instructionTable[opcode].toString()}\n"
+        debug += "Last instruction:\n"
+        debug += String.format("op: 0x%02X", opcode) + ", ${instructionTable[opcode].toString()}\n"
+        debug += "Current status:\n"
         debug += String.format("addr: 0x%04X", address) + "\n"
         debug += registers.toString() + "\n"
         print(debug)

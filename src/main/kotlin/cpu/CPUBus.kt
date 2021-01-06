@@ -1,29 +1,31 @@
-import cpu.CPU
+package cpu
 
-class Bus(
-    cpu: CPU
+import Ram
+import ppu.PPU
+
+class CPUBus(
+    cpu: CPU,
+    ppu: PPU,
+    val ram: Ram
 ) {
-
-    //fake ram
-    val ram: IntArray
 
 
     fun read(addr: Int): Int {
         return if (addr in 0..0xFFFF)
-            ram[addr] and 0xFF
+            ram.read(addr) and 0xFF
         else
             0
     }
 
     fun write(addr: Int, data: Int) {
         if (addr in 0..0xFFFF)
-            ram[addr] = data and 0xFF
+            ram.write(addr, data and 0xFF)
     }
 
     init {
         //connect the cpu to the bus
         cpu.connectBus(this)
-
-        ram = IntArray(0x10000)
+        ppu.connectBus(this)
+        ram.connectBus(this)
     }
 }

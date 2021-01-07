@@ -1,13 +1,13 @@
 import cpu.*
 import ext.toByteArrayFromHex
-import ppu.PPU
+import ppu.Ppu
 import java.nio.file.Files
 import java.nio.file.Paths
 
 
-private var cpuBus: CPUBus? = null
-private var cpu: CPU? = null
-private var ppu: PPU? = null
+private var cpuBus: CpuBus? = null
+private var cpu: Cpu? = null
+private var ppu: Ppu? = null
 private var ram: Ram? = null
 
 fun main() {
@@ -24,9 +24,9 @@ fun loadRom(path: String){
 }
 
 fun olcTest(){
-    cpu = CPU()
+    cpu = Cpu()
     ram = Ram(0xFFFF)
-    cpuBus = CPUBus(cpu!!, ppu!!, ram!!)
+    cpuBus = CpuBus(cpu!!, ppu!!, ram!!)
 
     val code = "A20A8E0000A2038E0100AC0000A900186D010088D0FA8D0200EAEAEA"
     val data = code.toByteArrayFromHex()

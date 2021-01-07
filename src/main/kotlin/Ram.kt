@@ -1,26 +1,24 @@
-import cpu.CPUBus
+import cpu.CpuBus
 
 class Ram(
-    size: Int
+    size: Int = 0x800   //2KB
 ) {
     //variables---------------------------------------------------------------------------------------------------------
-    private lateinit var cpuBus: CPUBus
+    private lateinit var cpuBus: CpuBus
     private val data = IntArray(size)
 
 
-    //Communication with the bus----------------------------------------------------------------------------------------
-
-    //Connects the CPU to the bus
-    fun connectBus(cpuBus: CPUBus) {
+    //Connects the RAM to the bus
+    fun connectBus(cpuBus: CpuBus) {
         this.cpuBus = cpuBus
     }
 
-    //reads from the bus
+    //reads from RAM
     fun read(addr: Int): Int {
         return this.data[addr]
     }
 
-    //writes to the bus
+    //writes to RAM
     fun write(addr: Int, data: Int) {
         this.data[addr] = data
     }

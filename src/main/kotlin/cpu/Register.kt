@@ -12,7 +12,7 @@ class Register {
 
     var c = false   //Carry
     var z = false   //Zero
-    var i = true    //Disable interrputs
+    var i = true    //Disable interrupts
     var d = false   //Decimal mode
     var b = false   //Break
     var u = false   //Unused

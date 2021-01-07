@@ -4,9 +4,9 @@ import ext.toBoolean
 import ext.toInt
 
 
-class CPU {
-    //variables---------------------------------------------------------------------------------------------------------
-    private lateinit var cpuBus: CPUBus
+class Cpu {
+    //Variables---------------------------------------------------------------------------------------------------------
+    private lateinit var cpuBus: CpuBus
 
     var registers = Register()
 
@@ -22,7 +22,7 @@ class CPU {
     //Communication with the bus----------------------------------------------------------------------------------------
 
     //Connects the CPU to the bus
-    fun connectBus(cpuBus: CPUBus) {
+    fun connectBus(cpuBus: CpuBus) {
         this.cpuBus = cpuBus
     }
 
@@ -57,7 +57,7 @@ class CPU {
         --cycles
     }
 
-    //prints the current state of the CPU
+    //Prints the current state of the CPU
     fun printDebug(msg: String = "") {
         var debug = ""
 

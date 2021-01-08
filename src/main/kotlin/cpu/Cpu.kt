@@ -14,9 +14,9 @@ class Cpu {
     var fetched: Int = 0            //Fetched value
     var cycles: Int = 0             //How many cycles are left
     var address: Int = 0            //Absolute address
-    var offsetAddress: Int = 0    //Relative address
+    var offsetAddress: Int = 0      //Relative address
 
-    var clockCount: Int = 0         //Total clock count
+    var totalClockCount: Int = 0         //Total clock count
 
 
     //Communication with the bus----------------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ class Cpu {
     //CPU functions-----------------------------------------------------------------------------------------------------
 
     //Performs one clock cycle
-    fun clockCycle() {
+    fun clock() {
         if (cycles == 0) {
             opcode = read(registers.pc++)
 
@@ -52,7 +52,7 @@ class Cpu {
             cycles += (additionalCycle1 and additionalCycle2)
         }
 
-        ++clockCount
+        ++totalClockCount
 
         --cycles
     }
@@ -75,7 +75,7 @@ class Cpu {
     //Resets the CPU
     fun reset() {
         //reset clock count
-        clockCount = 0
+        totalClockCount = 0
 
         //Set program counter
         address = 0xFFFC

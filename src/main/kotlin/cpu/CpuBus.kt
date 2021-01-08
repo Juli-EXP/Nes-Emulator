@@ -1,42 +1,64 @@
 package cpu
 
+import Cartridge
 import Ram
 import ppu.Ppu
 
 class CpuBus(
-    cpu: Cpu,
-    val ppu: Ppu,
-    val ram: Ram
+    private val cpu: Cpu,
+    private val ppu: Ppu,
+    private val ram: Ram
 ) {
+    //variables---------------------------------------------------------------------------------------------------------
 
+    private lateinit var cartridge: Cartridge
+    private var totalClockCcount: Int = 0
+
+    //Communication-----------------------------------------------------------------------------------------------------
 
     fun read(addr: Int): Int {
         return when(addr){
-            //reads from ram
+            //Reads from ram
             in 0x0000..0x17FF -> ram.read(addr % 0x800) and 0xFF
-            //reads from ppu
-            in 0x2000..0x3FFF -> ppu.read(addr % 0x8) and 0xFF
+            //Reads from ppu
+            in 0x2000..0x3FFF -> ppu.cpuRead(addr % 0x8) and 0xFF
             else -> 0
         }
     }
 
     fun write(addr: Int, data: Int) {
         when(addr){
-            //writes to ram
+            //Writes to ram
             in 0x0000..0x17FF -> ram.write(addr % 0x800, data and 0xFF)
-            //writes to ppu
-            in 0x2000..0x3FFF -> ppu.write(addr % 0x8, data and 0xFF)
+            //Writes to ppu
+            in 0x2000..0x3FFF -> ppu.cpuWrite(addr % 0x8, data and 0xFF)
         }
-
-        //
-        if (addr in 0..0xFFFF)
-            ram.write(addr, data and 0xFF)
     }
 
-    //connect the all devices to the bus
+    //Connects the the CPU to the bus
     init {
         cpu.connectBus(this)
-        ppu.connectBus(this)
-        ram.connectBus(this)
+    }
+
+
+    //Functionality-----------------------------------------------------------------------------------------------------
+
+    //Connects the cartridge to the CPU and PPU bus
+    fun connectCartridge(cartridge: Cartridge){
+        this.cartridge = cartridge
+        ppu.connectCartridge(cartridge)
+    }
+
+    //Reset the console
+    fun reset(){
+        totalClockCcount = 0
+        cpu.reset()
+        ppu.reset()
+    }
+
+    //Performs one clock cycle
+    fun clock(){
+        cpu.clock()
+        ppu.clock()
     }
 }

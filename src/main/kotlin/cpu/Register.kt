@@ -19,7 +19,7 @@ class Register {
     var v = false   //Overflow
     var n = false   //Negative
 
-    var status: Int //status register as one byte saving into memory
+    var status: Int //Status register as one byte saving into memory
         get() = (c.toInt()) or
                 (z.toInt() shl 1) or
                 (i.toInt() shl 2) or

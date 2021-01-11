@@ -1,3 +1,4 @@
+import cartridge.RomHeader
 import cpu.*
 import ext.toByteArrayFromHex
 import ppu.Ppu
@@ -11,6 +12,5 @@ private var ppu: Ppu? = null
 private var ram: Ram? = null
 
 fun main() {
-
 
 }

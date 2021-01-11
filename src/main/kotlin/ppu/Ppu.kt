@@ -1,7 +1,6 @@
 package ppu
 
-import Cartridge
-import cpu.CpuBus
+import cartridge.Cartridge
 
 class Ppu {
     //Variables---------------------------------------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 package cpu
 
-import Cartridge
+import cartridge.Cartridge
 import Ram
 import ppu.Ppu
 
@@ -12,7 +12,7 @@ class CpuBus(
     //variables---------------------------------------------------------------------------------------------------------
 
     private lateinit var cartridge: Cartridge
-    private var totalClockCcount: Int = 0
+    private var totalClockCount: Int = 0
 
     //Communication-----------------------------------------------------------------------------------------------------
 
@@ -51,7 +51,7 @@ class CpuBus(
 
     //Reset the console
     fun reset(){
-        totalClockCcount = 0
+        totalClockCount = 0
         cpu.reset()
         ppu.reset()
     }

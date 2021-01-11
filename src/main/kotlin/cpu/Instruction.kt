@@ -1,6 +1,6 @@
 package cpu
 
-data class Instruction(
+class Instruction(
     val instruction: () -> Int,
     val addressingMode: () -> Int,
     val cycles: Int = 0

@@ -2,6 +2,10 @@ package cpu
 
 import ext.toBoolean
 import ext.toInt
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
 
 
 class Cpu {
@@ -17,6 +21,7 @@ class Cpu {
     var offsetAddress: Int = 0      //Relative address
 
     var totalClockCount: Int = 0         //Total clock count
+    var debug: Boolean = false
 
 
     //Communication with the bus----------------------------------------------------------------------------------------
@@ -42,8 +47,33 @@ class Cpu {
     //Performs one clock cycle
     fun clock() {
         if (cycles == 0) {
+            if (debug) {
+                Files.write(
+                    Paths.get("log.txt"),
+                    String.format("PC: 0x%04X  ", registers.pc).toByteArray(),
+                    StandardOpenOption.APPEND
+                )
+            }
+
             opcode = read(registers.pc++)
 
+            if (debug) {
+                Files.write(
+                    Paths.get("log.txt"),
+                    (String.format("OP: 0x%02X  ", opcode) +
+                            String.format("ADDR: 0x%04X  ", address) +
+                            instructionTable[opcode].toString() + "\t" +
+                            String.format(
+                                "A: %02X X: %02X Y: %02X",
+                                registers.a,
+                                registers.x,
+                                registers.y
+                            ) + "\n").toByteArray(),
+                    StandardOpenOption.APPEND
+                )
+            }
+
+            //TODO ignore unofficial opcodes
             cycles = instructionTable[opcode]!!.cycles
 
             val additionalCycle1 = instructionTable[opcode]!!.addressingMode()
@@ -64,7 +94,6 @@ class Cpu {
         if (msg.isNotEmpty())
             debug = "$msg\n"
 
-        debug += "Last instruction:\n"
         debug += String.format("op: 0x%02X", opcode) + ", ${instructionTable[opcode].toString()}\n"
         debug += "Current status:\n"
         debug += String.format("addr: 0x%04X", address) + "\n"
@@ -148,6 +177,7 @@ class Cpu {
 
     //Gets data depending on the current addressing mode
     private fun fetch() {
+        println("fetch")
         if (instructionTable[opcode]!!.addressingMode != this::imp)
             fetched = read(address)
     }

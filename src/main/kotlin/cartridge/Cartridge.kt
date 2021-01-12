@@ -8,9 +8,9 @@ import java.io.File
 class Cartridge(
     private val romFile: File
 ) {
-    private val programMemory: ByteArray = TODO()
+    private val programMemory: ByteArray
     private val characterMemory: ByteArray
-    private val mapper: Mapper
+    private val mapper: Mapper?
     private val mirroring: Mirroring
 
 
@@ -39,7 +39,7 @@ class Cartridge(
     //Prepare data
     init {
         //Read in all data
-        val romData = romFile.inputStream().readBytes()
+        var romData = romFile.inputStream().readBytes()
 
         //Construct header
         val header = RomHeader(romData.copyOfRange(0, 15))
@@ -47,7 +47,8 @@ class Cartridge(
         romData = romData.copyOfRange(header.size, romData.size - 1)
 
         if (header.trainerPresent) {
-            //Read trainer and remove it
+            //Read trainer and ignore it
+            val trainer = romData.copyOfRange(0, 511)
             romData = romData.copyOfRange(512, romData.size - 1)
         }
 
@@ -59,10 +60,13 @@ class Cartridge(
         characterMemory = romData.copyOfRange(0, header.chrSize - 1)
         romData = romData.copyOfRange(header.chrSize, romData.size - 1)
 
+        //TODO add INST-ROM and PROM
+
         mirroring = header.mirroring
 
-        when (header.mapper) {
-            0 -> mapper = Mapper000()
+        mapper = when (header.mapper) {
+            0 -> Mapper000()
+            else -> null
         }
     }
 }

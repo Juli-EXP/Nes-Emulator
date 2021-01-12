@@ -27,14 +27,14 @@ fun main() {
         ++i
     }
 
+    cpu.reset()
     cpu.registers.pc = 0xC000
     cpu.debug = true
 
     while(true){
         cpu.clock()
-        cpu.printDebug()
-        println(cpu.fetched)
-        println(cpu.totalClockCount)
+        //cpu.printDebug()
+        //println(cpu.totalClockCount)
     }
 
 

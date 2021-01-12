@@ -24,6 +24,11 @@ class Cpu {
     var debug: Boolean = false
 
 
+    init {
+        //TODO change it to the right state
+        registers.sp = 0xFD
+    }
+
     //Communication with the bus----------------------------------------------------------------------------------------
 
     //Connects the CPU to the bus
@@ -57,6 +62,11 @@ class Cpu {
 
             opcode = read(registers.pc++)
 
+            //TODO ignore unofficial opcodes
+            cycles = instructionTable[opcode]!!.cycles
+
+            val additionalCycle1 = instructionTable[opcode]!!.addressingMode()
+
             if (debug) {
                 Files.write(
                     Paths.get("log.txt"),
@@ -64,19 +74,17 @@ class Cpu {
                             String.format("ADDR: 0x%04X  ", address) +
                             instructionTable[opcode].toString() + "\t" +
                             String.format(
-                                "A: %02X X: %02X Y: %02X",
+                                "A: %02X X: %02X Y: %02X P: %02X SP: %02X",
                                 registers.a,
                                 registers.x,
-                                registers.y
+                                registers.y,
+                                registers.status,
+                                registers.sp
                             ) + "\n").toByteArray(),
                     StandardOpenOption.APPEND
                 )
             }
 
-            //TODO ignore unofficial opcodes
-            cycles = instructionTable[opcode]!!.cycles
-
-            val additionalCycle1 = instructionTable[opcode]!!.addressingMode()
             val additionalCycle2 = instructionTable[opcode]!!.instruction()
 
             cycles += (additionalCycle1 and additionalCycle2)
@@ -177,12 +185,11 @@ class Cpu {
 
     //Gets data depending on the current addressing mode
     private fun fetch() {
-        println("fetch")
         if (instructionTable[opcode]!!.addressingMode != this::imp)
             fetched = read(address)
     }
 
-    private fun push(data: Int) {
+    private fun  push(data: Int) {
         write(0x0100 + registers.sp--, data)
     }
 
@@ -992,6 +999,7 @@ class Cpu {
     //Return from subroutine
     private fun rts(): Int {
         registers.pc = pop() or (pop() shl 8)
+        ++registers.pc
         return 0
     }
 

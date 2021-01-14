@@ -2,7 +2,6 @@ package cpu
 
 import ext.toBoolean
 import ext.toInt
-import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
@@ -61,31 +60,36 @@ class Cpu {
             }
 
             opcode = read(registers.pc++)
+            var instruction = instructionTable[opcode]
 
-            //TODO ignore unofficial opcodes
-            cycles = instructionTable[opcode]!!.cycles
+            if (instruction == null) {
+                instruction = Instruction(this::xxx, this::xxx, 1)
+            }
 
-            val additionalCycle1 = instructionTable[opcode]!!.addressingMode()
+            cycles = instruction.cycles
+
+            val additionalCycle1 = instruction.addressingMode()
 
             if (debug) {
                 Files.write(
                     Paths.get("log.txt"),
                     (String.format("OP: 0x%02X  ", opcode) +
                             String.format("ADDR: 0x%04X  ", address) +
-                            instructionTable[opcode].toString() + "\t" +
+                            "$instruction\t" +
                             String.format(
-                                "A: %02X X: %02X Y: %02X P: %02X SP: %02X",
+                                "A: %02X X: %02X Y: %02X P: %02X SP: %02X CYC: %d",
                                 registers.a,
                                 registers.x,
                                 registers.y,
                                 registers.status,
-                                registers.sp
+                                registers.sp,
+                                totalClockCount - 1
                             ) + "\n").toByteArray(),
                     StandardOpenOption.APPEND
                 )
             }
 
-            val additionalCycle2 = instructionTable[opcode]!!.instruction()
+            val additionalCycle2 = instruction.instruction()
 
             cycles += (additionalCycle1 and additionalCycle2)
         }
@@ -189,7 +193,7 @@ class Cpu {
             fetched = read(address)
     }
 
-    private fun  push(data: Int) {
+    private fun push(data: Int) {
         write(0x0100 + registers.sp--, data)
     }
 
@@ -369,7 +373,7 @@ class Cpu {
     )
 
 
-    //Here is a usefull link with all the addressing modes and opcodes:
+    //Here is a useful link with all the addressing modes and opcodes:
     //https://www.masswerk.at/6502/6502_instruction_set.html
 
     //The addressing modes return 1 if an additional clock cycle is needed
@@ -377,7 +381,6 @@ class Cpu {
 
     //Accumulator
     fun acc(): Int {
-        println("Called ACC")
         return 0
     }
 
@@ -507,6 +510,11 @@ class Cpu {
 
 
     //Opcodes-----------------------------------------------------------------------------------------------------------
+
+    //No opcode
+    private fun xxx(): Int {
+        return 0
+    }
 
     //And with carry
     private fun adc(): Int {

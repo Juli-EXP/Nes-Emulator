@@ -1,6 +1,5 @@
 package cartridge
 
-import ext.toHexString
 import mappers.Mapper
 import mappers.Mapper000
 import java.io.File
@@ -65,7 +64,7 @@ class Cartridge(
         mirroring = header.mirroring
 
         mapper = when (header.mapper) {
-            0 -> Mapper000()
+            0 -> Mapper000(header.prgBanks, header.chrBanks)
             else -> null
         }
     }

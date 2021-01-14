@@ -15,11 +15,11 @@ class Register {
     var i = true    //Disable interrupts
     var d = false   //Decimal mode
     var b = false   //Break
-    var u = false   //Unused
+    var u = true    //Unused
     var v = false   //Overflow
     var n = false   //Negative
 
-    var status: Int //Status register as one byte saving into memory
+    var status: Int //Status register as one byte
         get() = (c.toInt()) or
                 (z.toInt() shl 1) or
                 (i.toInt() shl 2) or
@@ -45,7 +45,7 @@ class Register {
         i = true
         d = false
         b = false
-        u = false
+        u = true
         v = false
         n = false
     }

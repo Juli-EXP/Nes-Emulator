@@ -13,19 +13,23 @@ class Cpu {
 
     var registers = Register()
 
-    var opcode: Int = 0             //Current opcode
-    var fetched: Int = 0            //Fetched value
-    var cycles: Int = 0             //How many cycles are left
-    var address: Int = 0            //Absolute address
-    var offsetAddress: Int = 0      //Relative address
+    var opcode: Int = 0                     //Current opcode
+    var instruction: Instruction? = null    //Current instruction
+    var fetched: Int = 0                    //Fetched value
+    var cycles: Int = 0                     //How many cycles are left
+    var address: Int = 0                    //Absolute address
 
-    var totalClockCount: Int = 0         //Total clock count
+    var totalClockCount: Int = 7            //Total clock count
     var debug: Boolean = false
 
 
     init {
-        //TODO change it to the right state
+        //TODO change startup states
         registers.sp = 0xFD
+
+        Files.deleteIfExists(Paths.get("log.txt"))
+        Files.createFile(Paths.get("log.txt"))
+
     }
 
     //Communication with the bus----------------------------------------------------------------------------------------
@@ -60,36 +64,37 @@ class Cpu {
             }
 
             opcode = read(registers.pc++)
-            var instruction = instructionTable[opcode]
+            instruction = instructionTable[opcode]
 
             if (instruction == null) {
                 instruction = Instruction(this::xxx, this::xxx, 1)
             }
 
-            cycles = instruction.cycles
+            cycles = instruction!!.cycles
 
-            val additionalCycle1 = instruction.addressingMode()
+            val additionalCycle1 = instruction!!.addressingMode()
 
             if (debug) {
                 Files.write(
                     Paths.get("log.txt"),
                     (String.format("OP: 0x%02X  ", opcode) +
                             String.format("ADDR: 0x%04X  ", address) +
+                            String.format("VALUE: 0x%02X  ", fetched) +
                             "$instruction\t" +
                             String.format(
-                                "A: %02X X: %02X Y: %02X P: %02X SP: %02X CYC: %d",
+                                "A: %02X  X: %02X  Y: %02X  P: %02X  SP: %02X  CYC: %d",
                                 registers.a,
                                 registers.x,
                                 registers.y,
                                 registers.status,
                                 registers.sp,
-                                totalClockCount - 1
+                                totalClockCount
                             ) + "\n").toByteArray(),
                     StandardOpenOption.APPEND
                 )
             }
 
-            val additionalCycle2 = instruction.instruction()
+            val additionalCycle2 = instruction!!.instruction()
 
             cycles += (additionalCycle1 and additionalCycle2)
         }
@@ -106,7 +111,7 @@ class Cpu {
         if (msg.isNotEmpty())
             debug = "$msg\n"
 
-        debug += String.format("op: 0x%02X", opcode) + ", ${instructionTable[opcode].toString()}\n"
+        debug += String.format("op: 0x%02X", opcode) + ", ${instruction}\n"
         debug += "Current status:\n"
         debug += String.format("addr: 0x%04X", address) + "\n"
         debug += registers.toString() + "\n"
@@ -134,7 +139,6 @@ class Cpu {
         registers.resetStatus()
 
         //Reset any other var
-        offsetAddress = 0
         address = 0
         fetched = 0
 
@@ -189,7 +193,7 @@ class Cpu {
 
     //Gets data depending on the current addressing mode
     private fun fetch() {
-        if (instructionTable[opcode]!!.addressingMode != this::imp)
+        if (instruction!!.addressingMode != this::imp)
             fetched = read(address)
     }
 
@@ -480,14 +484,20 @@ class Cpu {
 
     //Relative
     private fun rel(): Int {
-        offsetAddress = read(registers.pc++)
+        var offset = read(registers.pc++)
 
         //checks if number is bigger than 127
-        if (offsetAddress > 0x80) {
-            offsetAddress -= 0x100
+        if ((offset and 0x80).toBoolean()) {
+            offset -= 0x100
         }
 
-        return 0
+        address = registers.pc + offset
+
+        return if ((address and 0xFF00) != (registers.pc and 0xFF00)) {
+            1
+        }else {
+            0
+        }
     }
 
     //Zero page
@@ -514,6 +524,11 @@ class Cpu {
     //No opcode
     private fun xxx(): Int {
         return 0
+    }
+
+    private fun branch() {
+        ++cycles
+        registers.pc = address
     }
 
     //And with carry
@@ -543,7 +558,7 @@ class Cpu {
     //Arithmetic shift left
     private fun asl(): Int {
         fetch()
-        val temp = if (instructionTable[opcode]!!.addressingMode == this::imp) {
+        val temp = if (instruction!!.addressingMode == this::imp) {
             registers.a
         } else {
             fetched
@@ -555,7 +570,7 @@ class Cpu {
         registers.z = (result and 0xFF) == 0
         registers.n = (result and 0x80).toBoolean()
 
-        if (instructionTable[opcode]!!.addressingMode == this::imp) {
+        if (instruction!!.addressingMode == this::imp) {
             registers.a = result and 0xFF
         } else {
             write(address, result)
@@ -566,15 +581,7 @@ class Cpu {
     //Branch on carry clear
     private fun bcc(): Int {
         if (!registers.c) {
-            ++cycles
-
-            address = registers.pc + offsetAddress
-
-            if ((address and 0xFF0) != (registers.pc and 0xFF00)) {
-                ++cycles
-            }
-
-            registers.pc = address
+            branch()
         }
         return 0
     }
@@ -582,15 +589,7 @@ class Cpu {
     //Branch on carry set
     private fun bcs(): Int {
         if (registers.c) {
-            ++cycles
-
-            address = registers.pc + offsetAddress
-
-            if ((address and 0xFF0) != (registers.pc and 0xFF00)) {
-                ++cycles
-            }
-
-            registers.pc = address
+            branch()
         }
         return 0
     }
@@ -598,15 +597,7 @@ class Cpu {
     //Branch on equal (zero set)
     private fun beq(): Int {
         if (registers.z) {
-            ++cycles
-
-            address = registers.pc + offsetAddress
-
-            if ((address and 0xFF0) != (registers.pc and 0xFF00)) {
-                ++cycles
-            }
-
-            registers.pc = address
+            branch()
         }
         return 0
     }
@@ -625,31 +616,15 @@ class Cpu {
     //Branch on minus (negative set)
     private fun bmi(): Int {
         if (registers.n) {
-            ++cycles
-
-            address = registers.pc + offsetAddress
-
-            if ((address and 0xFF0) != (registers.pc and 0xFF00)) {
-                ++cycles
-            }
-
-            registers.pc = address
+            branch()
         }
         return 0
     }
 
-    //Branch on not equal (zero set)
+    //Branch on not equal (zero clear)
     private fun bne(): Int {
         if (!registers.z) {
-            ++cycles
-
-            address = registers.pc + offsetAddress
-
-            if ((address and 0xFF0) != (registers.pc and 0xFF00)) {
-                ++cycles
-            }
-
-            registers.pc = address
+            branch()
         }
         return 0
     }
@@ -657,15 +632,7 @@ class Cpu {
     //Branch on plus (negative clear)
     private fun bpl(): Int {
         if (!registers.n) {
-            ++cycles
-
-            address = registers.pc + offsetAddress
-
-            if ((address and 0xFF00) != (registers.pc and 0xFF00)) {
-                ++cycles
-            }
-
-            registers.pc = address
+            branch()
         }
         return 0
     }
@@ -691,15 +658,7 @@ class Cpu {
     //Branch on overflow clear
     private fun bvc(): Int {
         if (!registers.v) {
-            ++cycles
-
-            address = registers.pc + offsetAddress
-
-            if ((address and 0xFF00) != (registers.pc and 0xFF00)) {
-                ++cycles
-            }
-
-            registers.pc = address
+            branch()
         }
         return 0
     }
@@ -707,15 +666,7 @@ class Cpu {
     //Branch on overflow set
     private fun bvs(): Int {
         if (registers.v) {
-            ++cycles
-
-            address = registers.pc + offsetAddress
-
-            if ((address and 0xFF00) != (registers.pc and 0xFF00)) {
-                ++cycles
-            }
-
-            registers.pc = address
+            branch()
         }
         return 0
     }
@@ -892,7 +843,7 @@ class Cpu {
     //Logical shift right
     private fun lsr(): Int {
         fetch()
-        val temp = if (instructionTable[opcode]!!.addressingMode == this::imp) {
+        val temp = if (instruction!!.addressingMode == this::imp) {
             registers.a
         } else {
             fetched
@@ -903,7 +854,7 @@ class Cpu {
         registers.z = (result and 0xFF) == 0
         registers.n = (result and 0x80).toBoolean()
 
-        if (instructionTable[opcode]!!.addressingMode == this::imp) {
+        if (instruction!!.addressingMode == this::imp) {
             registers.a = result and 0xFF
         } else {
             write(address, result)
@@ -921,8 +872,8 @@ class Cpu {
         fetch()
         registers.a = registers.a or fetched
 
-        registers.z = registers.x == 0
-        registers.n = (registers.x and 0x80).toBoolean()
+        registers.z = registers.a == 0
+        registers.n = (registers.a and 0x80).toBoolean()
         return 0
     }
 
@@ -956,7 +907,7 @@ class Cpu {
     //Rotate left
     private fun rol(): Int {
         fetch()
-        val temp = if (instructionTable[opcode]!!.addressingMode == this::imp) {
+        val temp = if (instruction!!.addressingMode == this::imp) {
             registers.a
         } else {
             fetched
@@ -967,7 +918,7 @@ class Cpu {
         registers.z = (result and 0xFF) == 0
         registers.n = (result and 0x80).toBoolean()
 
-        if (instructionTable[opcode]!!.addressingMode == this::imp) {
+        if (instruction!!.addressingMode == this::imp) {
             registers.a = result and 0xFF
         } else {
             write(address, result)
@@ -978,7 +929,7 @@ class Cpu {
     //Rotate right
     private fun ror(): Int {
         fetch()
-        val temp = if (instructionTable[opcode]!!.addressingMode == this::imp) {
+        val temp = if (instruction!!.addressingMode == this::imp) {
             registers.a
         } else {
             fetched
@@ -989,7 +940,7 @@ class Cpu {
         registers.z = (result and 0xFF) == 0
         registers.n = (result and 0x80).toBoolean()
 
-        if (instructionTable[opcode]!!.addressingMode == this::imp) {
+        if (instruction!!.addressingMode == this::imp) {
             registers.a = result and 0xFF
         } else {
             write(address, result)

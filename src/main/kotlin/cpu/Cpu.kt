@@ -514,7 +514,7 @@ class Cpu {
 
     //Zero page y
     private fun zpy(): Int {
-        address = read(registers.pc++) + registers.x
+        address = read(registers.pc++) + registers.y
         return 0
     }
 
@@ -760,8 +760,8 @@ class Cpu {
         fetch()
         registers.a = registers.a xor fetched
 
-        registers.z = registers.x == 0
-        registers.n = (registers.x and 0x80).toBoolean()
+        registers.z = registers.a == 0
+        registers.n = (registers.a and 0x80).toBoolean()
         return 0
     }
 
@@ -1037,8 +1037,8 @@ class Cpu {
     //Transfer X to accumulator
     private fun txa(): Int {
         registers.a = registers.x
-        registers.z = registers.x == 0
-        registers.n = (registers.x and 0x80).toBoolean()
+        registers.z = registers.a == 0
+        registers.n = (registers.a and 0x80).toBoolean()
         return 0
     }
 
@@ -1051,8 +1051,8 @@ class Cpu {
     //Transfer Y to accumulator
     private fun tya(): Int {
         registers.a = registers.y
-        registers.z = registers.y == 0
-        registers.n = (registers.y and 0x80).toBoolean()
+        registers.z = registers.a == 0
+        registers.n = (registers.a and 0x80).toBoolean()
         return 0
     }
 

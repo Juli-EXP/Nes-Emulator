@@ -14,7 +14,6 @@ private var cpuBus = CpuBus(cpu, ppu, ram)
 fun main() {
     val romBytes = Files.readAllBytes(Paths.get("roms/nestest.nes"))
     val romData = romBytes.copyOfRange(0x10, 0x4000)
-    println(RomHeader(romBytes.copyOfRange(0, 0xF)).mapper)
 
     var i = 0x8000
     for (b in romData) {
@@ -32,7 +31,7 @@ fun main() {
     cpu.debug = true
 
 
-    /*
+
     while (true) {
         cpu.clock()
         if(ram.read(0x02) != 0) println("0x02: " + ram.read(0x02))
@@ -41,7 +40,7 @@ fun main() {
         if(ram.read(0x0300) != 0) println("0x0300: " + ram.read(0x0300))
     }
 
-     */
+
 
 
 }

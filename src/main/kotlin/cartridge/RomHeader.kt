@@ -14,7 +14,7 @@ class RomHeader(private val headerBytes: ByteArray) {
     private val flag8 = headerBytes[8].toInt()
     private val flag9 = headerBytes[9].toInt()
     private val flag10 = headerBytes[10].toInt()
-    private val unused = headerBytes.copyOfRange(11, 15)
+    private val unused = headerBytes.copyOfRange(11, 16)
 
     val size: Int
         get() = headerBytes.size

@@ -2,10 +2,11 @@ package cartridge
 
 import mappers.Mapper
 import mappers.Mapper000
-import java.io.File
+import java.nio.file.Files
+import java.nio.file.Paths
 
 class Cartridge(
-    private val romFile: File
+    private val romFilePath: String
 ) {
     private val programMemory: ByteArray
     private val characterMemory: ByteArray
@@ -15,49 +16,52 @@ class Cartridge(
 
     //Communication with the bus----------------------------------------------------------------------------------------
 
-    //Reads from the CPU bus
+    //Returns read data from the Cartridge to the CPU bus
     fun cpuRead(addr: Int): Int {
-        return 0
+        return programMemory[mapper!!.cpuRead(addr)].toInt()
     }
 
-    //Writes to the CPU bus
+    //Writes data to the Cartridge, if possible
     fun cpuWrite(addr: Int, data: Int) {
+        if (mapper!!.useCartridgeRam(addr)) {
+            TODO()
+        }
     }
 
-    //Reads from the PPU bus
+    //Returns read data from the Cartridge to the PPU bus
     fun ppuRead(addr: Int): Int {
         return 0
     }
 
-    //Writes to the PPU bus
+    //Writes data to the Cartridge, if possible
     fun ppuWrite(addr: Int, data: Int) {
     }
 
-    //
 
     //Prepare data
     init {
         //Read in all data
-        var romData = romFile.inputStream().readBytes()
+        var romData = Files.readAllBytes(Paths.get(romFilePath))
 
         //Construct header
-        val header = RomHeader(romData.copyOfRange(0, 15))
+        val header = RomHeader(romData.copyOfRange(0, 16))
+        println(header.prgBanks)
         //Remove header from romData
-        romData = romData.copyOfRange(header.size, romData.size - 1)
+        romData = romData.copyOfRange(header.size, romData.size)
 
         if (header.trainerPresent) {
             //Read trainer and ignore it
-            val trainer = romData.copyOfRange(0, 511)
-            romData = romData.copyOfRange(512, romData.size - 1)
+            val trainer = romData.copyOfRange(0, 512)
+            romData = romData.copyOfRange(512, romData.size)
         }
 
         //Read program memory
-        programMemory = romData.copyOfRange(0, header.prgSize - 1)
-        romData = romData.copyOfRange(header.prgSize, romData.size - 1)
+        programMemory = romData.copyOfRange(0, header.prgSize)
+        romData = romData.copyOfRange(header.prgSize, romData.size)
 
         //Read character memory
-        characterMemory = romData.copyOfRange(0, header.chrSize - 1)
-        romData = romData.copyOfRange(header.chrSize, romData.size - 1)
+        characterMemory = romData.copyOfRange(0, header.chrSize)
+        romData = romData.copyOfRange(header.chrSize, romData.size)
 
         //TODO add INST-ROM and PROM
 

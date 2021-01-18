@@ -1,3 +1,4 @@
+import cartridge.Cartridge
 import cartridge.RomHeader
 import cpu.*
 import ext.toByteArrayFromHex
@@ -9,9 +10,26 @@ import java.nio.file.Paths
 private var cpu = Cpu()
 private var ppu = Ppu()
 private var ram = Ram(0x10000)
+private var cartridge = Cartridge("roms/nestest.nes")
+
 private var cpuBus = CpuBus(cpu, ppu, ram)
 
 fun main() {
+    cpuBus.connectCartridge(cartridge)
+
+    cpu.registers.pc = 0xC000
+    cpu.debug = true
+
+    while (true) {
+        cpu.clock()
+        if (ram.read(0x02) != 0) println("0x02: " + ram.read(0x02))
+        if (ram.read(0x03) != 0) println("0x03: " + ram.read(0x03))
+        if (ram.read(0x0200) != 0) println("0x0200: " + ram.read(0x0200))
+        if (ram.read(0x0300) != 0) println("0x0300: " + ram.read(0x0300))
+    }
+}
+
+fun oldTest() {
     val romBytes = Files.readAllBytes(Paths.get("roms/nestest.nes"))
     val romData = romBytes.copyOfRange(0x10, 0x4000)
 
@@ -34,13 +52,9 @@ fun main() {
 
     while (true) {
         cpu.clock()
-        if(ram.read(0x02) != 0) println("0x02: " + ram.read(0x02))
-        if(ram.read(0x03) != 0) println("0x03: " + ram.read(0x03))
-        if(ram.read(0x0200) != 0) println("0x0200: " + ram.read(0x0200))
-        if(ram.read(0x0300) != 0) println("0x0300: " + ram.read(0x0300))
+        if (ram.read(0x02) != 0) println("0x02: " + ram.read(0x02))
+        if (ram.read(0x03) != 0) println("0x03: " + ram.read(0x03))
+        if (ram.read(0x0200) != 0) println("0x0200: " + ram.read(0x0200))
+        if (ram.read(0x0300) != 0) println("0x0300: " + ram.read(0x0300))
     }
-
-
-
-
 }

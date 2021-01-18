@@ -1,8 +1,14 @@
 package mappers
 
 abstract class Mapper {
-    var usePpuRam = false
 
+    open fun useCartridgeRam(addr: Int): Boolean {
+        return false
+    }
+
+    open fun usePpuRam(addr: Int): Boolean {
+        return false
+    }
 
     open fun cpuRead(addr: Int): Int {
         return addr

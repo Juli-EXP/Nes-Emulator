@@ -5,6 +5,7 @@ import ext.toByteArrayFromHex
 import ppu.Ppu
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
 
 
 private var cpu = Cpu()
@@ -20,15 +21,30 @@ fun main() {
     cpu.registers.pc = 0xC000
     cpu.debug = true
 
-    //cpu.clock()
+    Files.deleteIfExists(Paths.get("error.txt"))
+    Files.createFile(Paths.get("error.txt"))
 
     do {
         cpu.clock()
-        if (cpuBus.read(0x02) != 0) println("0x02: " + String.format("0x%02X",ram.read(0x02)))
-        if (cpuBus.read(0x03) != 0) println("0x03: " + String.format("0x%02X",ram.read(0x03)))
-        if (cpuBus.read(0x0200) != 0) println("0x0200: " + String.format("0x%02X",ram.read(0x0200)))
-        if (cpuBus.read(0x0300) != 0) println("0x0300: " + String.format("0x%02X",ram.read(0x0300)))
-    }while (cpu.totalClockCount < 26554)
+        if(cpu.cycles == 0){
+            if (cpuBus.read(0x0200) != 0) {
+                Files.write(
+                    Paths.get("error.txt"),
+                    String.format("0x0200: 0x%02X\n", ram.read(0x0200)).toByteArray(),
+                    StandardOpenOption.APPEND
+                )
+                println(String.format("0x0200: 0x%02X", ram.read(0x0200)))
+            }
+            if (cpuBus.read(0x0300) != 0) {
+                Files.write(
+                    Paths.get("error.txt"),
+                    String.format("0x0300: 0x%02X\n", ram.read(0x0300)).toByteArray(),
+                    StandardOpenOption.APPEND
+                )
+                println(String.format("0x0300: 0x%02X", ram.read(0x0300)))
+            }
+        }
+    } while (cpu.totalClockCount < 26554)
 }
 
 fun oldTest() {

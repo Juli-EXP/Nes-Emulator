@@ -81,14 +81,14 @@ class Cpu {
                             String.format("ADDR: 0x%04X  ", address) +
                             "$instruction\t" +
                             String.format(
-                                "A: %02X  X: %02X  Y: %02X  P: %02X  SP: %02X  CYC: %d",
+                                "A: %02X  X: %02X  Y: %02X  P: %02X  SP: %02X  CYC: %d\n",
                                 registers.a,
                                 registers.x,
                                 registers.y,
                                 registers.status,
                                 registers.sp,
                                 totalClockCount
-                            ) + "\n").toByteArray(),
+                            )).toByteArray(),
                     StandardOpenOption.APPEND
                 )
             }
@@ -458,8 +458,8 @@ class Cpu {
     private fun idx(): Int {
         val temp = read(registers.pc++)
 
-        val lo = read((temp + registers.x) and 0xFF)
-        val hi = read((temp + registers.x + 1) and 0xFF)
+        val lo = read(temp + registers.x)
+        val hi = read(temp + registers.x + 1)
 
         address = ((hi shl 8) or lo)
         return 0
@@ -469,8 +469,8 @@ class Cpu {
     private fun idy(): Int {
         val temp = read(registers.pc++)
 
-        val lo = read(temp and 0xFF)
-        val hi = read((temp + 1) and 0xFF)
+        val lo = read(temp)
+        val hi = read(temp + 1)
 
         address = (((hi shl 8) or lo) + registers.y) and 0xFFFF
 
@@ -701,7 +701,7 @@ class Cpu {
         registers.c = registers.a >= fetched
         registers.z = (result and 0xFF) == 0
         registers.n = (result and 0x80).toBoolean()
-        return 0
+        return 1
     }
 
     //Compare with x
@@ -763,7 +763,7 @@ class Cpu {
 
         registers.z = registers.a == 0
         registers.n = (registers.a and 0x80).toBoolean()
-        return 0
+        return 1
     }
 
     //Increment
@@ -820,7 +820,7 @@ class Cpu {
 
         registers.z = registers.a == 0
         registers.n = (registers.a and 0x80).toBoolean()
-        return 0
+        return 1
     }
 
     //Load x
@@ -830,7 +830,7 @@ class Cpu {
 
         registers.z = registers.x == 0
         registers.n = (registers.x and 0x80).toBoolean()
-        return 0
+        return 1
     }
 
     //Load y
@@ -840,7 +840,7 @@ class Cpu {
 
         registers.z = registers.y == 0
         registers.n = (registers.y and 0x80).toBoolean()
-        return 0
+        return 1
     }
 
     //Logical shift right
@@ -878,7 +878,7 @@ class Cpu {
 
         registers.z = registers.a == 0
         registers.n = (registers.a and 0x80).toBoolean()
-        return 0
+        return 1
     }
 
     //Push accumulator
@@ -981,7 +981,7 @@ class Cpu {
         registers.v = ((result xor registers.a) and (registers.a xor fetched) and 0x80).toBoolean()
         registers.n = (result and 0x80).toBoolean()
         registers.a = result and 0xFF
-        return 0
+        return 1
     }
 
     //Set carry
@@ -1025,7 +1025,7 @@ class Cpu {
         registers.x = registers.a
         registers.z = registers.x == 0
         registers.n = (registers.x and 0x80).toBoolean()
-        return 0
+        return 1
     }
 
     //Transfer accumulator to y

@@ -79,7 +79,6 @@ class Cpu {
                     Paths.get("log.txt"),
                     (String.format("OP: 0x%02X  ", opcode) +
                             String.format("ADDR: 0x%04X  ", address) +
-                            String.format("VALUE: 0x%02X  ", fetched) +
                             "$instruction\t" +
                             String.format(
                                 "A: %02X  X: %02X  Y: %02X  P: %02X  SP: %02X  CYC: %d",
@@ -254,7 +253,7 @@ class Cpu {
         0x46 to Instruction(this::lsr, this::zpg, 5),
         0x48 to Instruction(this::pha, this::imp, 3),
         0x49 to Instruction(this::eor, this::imm, 2),
-        0x4A to Instruction(this::lsr, this::imp, 4),
+        0x4A to Instruction(this::lsr, this::imp, 2),
         0x4C to Instruction(this::jmp, this::abs, 3),
         0x4D to Instruction(this::eor, this::abs, 4),
         0x4E to Instruction(this::lsr, this::abs, 6),
@@ -404,7 +403,7 @@ class Cpu {
         val lo = read(registers.pc++)
         val hi = read(registers.pc++)
 
-        address = (((hi shl 8) or lo) + registers.x) and 0xFFFF
+        address = (((hi shl 8) or lo) + registers.x)
 
         return if ((address and 0xFF00) != (hi shl 8)) {
             1
@@ -419,7 +418,7 @@ class Cpu {
         val lo = read(registers.pc++)
         val hi = read(registers.pc++)
 
-        address = (((hi shl 8) or lo) + registers.y) and 0xFFFF
+        address = (((hi shl 8) or lo) + registers.y)
 
         return if ((address and 0xFF00) != (hi shl 8)) {
             1
@@ -430,7 +429,7 @@ class Cpu {
 
     //Immediate
     private fun imm(): Int {
-        address = registers.pc++
+        address = registers.pc++ and 0xFFFF
         return 0
     }
 
@@ -444,7 +443,7 @@ class Cpu {
         val lo = read(registers.pc++)
         val hi = read(registers.pc++)
 
-        val temp = ((hi shl 8) or lo) and 0xFFFF
+        val temp = ((hi shl 8) or lo)
 
         //simulating a hardware bug
         address = if (lo == 0xFF) {
@@ -462,7 +461,7 @@ class Cpu {
         val lo = read((temp + registers.x) and 0xFF)
         val hi = read((temp + registers.x + 1) and 0xFF)
 
-        address = ((hi shl 8) or lo) and 0xFFFF
+        address = ((hi shl 8) or lo)
         return 0
     }
 
@@ -491,11 +490,11 @@ class Cpu {
             offset -= 0x100
         }
 
-        address = registers.pc + offset
+        address = (registers.pc + offset) and 0xFFFF
 
         return if ((address and 0xFF00) != (registers.pc and 0xFF00)) {
             1
-        }else {
+        } else {
             0
         }
     }
@@ -508,13 +507,13 @@ class Cpu {
 
     //Zero page x
     private fun zpx(): Int {
-        address = read(registers.pc++) + registers.x
+        address = (read(registers.pc++) + registers.x) and 0xFFFF
         return 0
     }
 
     //Zero page y
     private fun zpy(): Int {
-        address = read(registers.pc++) + registers.y
+        address = (read(registers.pc++) + registers.y) and 0xFFFF
         return 0
     }
 
@@ -608,8 +607,8 @@ class Cpu {
         val result = registers.a and fetched
 
         registers.z = (result and 0xFF) == 0
-        registers.v = (fetched and (1 shl 7)).toBoolean()
-        registers.n = (fetched and (1 shl 6)).toBoolean()
+        registers.n = (fetched and (1 shl 7)).toBoolean()
+        registers.v = (fetched and (1 shl 6)).toBoolean()
         return 0
     }
 
@@ -740,6 +739,7 @@ class Cpu {
     //Decrement x
     private fun dex(): Int {
         --registers.x
+        registers.x = registers.x and 0xFF
 
         registers.z = registers.x == 0
         registers.n = (registers.x and 0x80).toBoolean()
@@ -748,7 +748,8 @@ class Cpu {
 
     //Decrement y
     private fun dey(): Int {
-        --registers.y
+        --registers.y and 0xFF
+        registers.y = registers.y and 0xFF
 
         registers.z = registers.y == 0
         registers.n = (registers.y and 0x80).toBoolean()
@@ -779,6 +780,7 @@ class Cpu {
     //Increment x
     private fun inx(): Int {
         ++registers.x
+        registers.x = registers.x and 0xFF
 
         registers.z = registers.x == 0
         registers.n = (registers.x and 0x80).toBoolean()
@@ -787,7 +789,8 @@ class Cpu {
 
     //Increment y
     private fun iny(): Int {
-        ++registers.y
+        ++registers.y and 0xFF
+        registers.y = registers.y and 0xFF
 
         registers.z = registers.y == 0
         registers.n = (registers.y and 0x80).toBoolean()
@@ -851,6 +854,7 @@ class Cpu {
 
         val result = temp shr 1
 
+        registers.c = (fetched and 0x01).toBoolean()
         registers.z = (result and 0xFF) == 0
         registers.n = (result and 0x80).toBoolean()
 
@@ -894,6 +898,8 @@ class Cpu {
     //Pull accumulator
     private fun pla(): Int {
         registers.a = pop()
+        registers.z = (registers.a and 0xFF) == 0
+        registers.n = (registers.a and 0x80).toBoolean()
         return 0
     }
 
@@ -901,6 +907,7 @@ class Cpu {
     private fun plp(): Int {
         registers.status = pop()
         registers.u = true
+        registers.b = false
         return 0
     }
 
@@ -936,7 +943,8 @@ class Cpu {
         }
 
         val result = (registers.c.toInt() shl 7) or (temp shr 1)
-        registers.c = (result and 0x1).toBoolean()
+
+        registers.c = (fetched and 0x01).toBoolean()
         registers.z = (result and 0xFF) == 0
         registers.n = (result and 0x80).toBoolean()
 
@@ -951,6 +959,7 @@ class Cpu {
     //Return from interrupt
     private fun rti(): Int {
         registers.status = pop()
+        registers.u = true
         registers.pc = pop() or (pop() shl 8)
         return 0
     }
@@ -967,10 +976,11 @@ class Cpu {
         fetch()
         val result = registers.a - fetched - (!registers.c).toInt()
 
-        registers.c = (result and 0xFF00).toBoolean()
+        registers.c = result >= 0
         registers.z = (result and 0xFF) == 0
         registers.v = ((result xor registers.a) and (registers.a xor fetched) and 0x80).toBoolean()
         registers.n = (result and 0x80).toBoolean()
+        registers.a = result and 0xFF
         return 0
     }
 

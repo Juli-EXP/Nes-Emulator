@@ -18,6 +18,9 @@ class Cartridge(
 
     //Returns read data from the Cartridge to the CPU bus
     fun cpuRead(addr: Int): Int {
+        //println("Address: ${String.format("0x%04X", addr)}")
+        //println("Mapped Address: ${String.format("0x%04X", mapper!!.cpuRead(addr))}")
+        //println(String.format("0x%04X", programMemory[mapper!!.cpuRead(addr)].toInt()))
         return programMemory[mapper!!.cpuRead(addr)].toInt()
     }
 
@@ -45,7 +48,7 @@ class Cartridge(
 
         //Construct header
         val header = RomHeader(romData.copyOfRange(0, 16))
-        println(header.prgBanks)
+
         //Remove header from romData
         romData = romData.copyOfRange(header.size, romData.size)
 

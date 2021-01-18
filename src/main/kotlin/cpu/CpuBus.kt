@@ -27,7 +27,7 @@ class CpuBus(
             //Family Basic only
             in 0x6000..0x7FFF -> 0
             //Reads from Cartridge
-            in 0x8000..0xFFFF -> cartridge.cpuRead(addr)
+            in 0x8000..0xFFFF -> cartridge.cpuRead(addr) and 0xFF
             else -> 0
         }
     }
@@ -43,7 +43,7 @@ class CpuBus(
             //Family Basic only
             in 0x6000..0x7FFF -> println("Illegal write operation at ${String.format("0x%04X")}")
             //Tries to write to Cartridge
-            in 0x8000..0xFFFF -> cartridge.cpuWrite(addr, data)
+            in 0x8000..0xFFFF -> cartridge.cpuWrite(addr, data and 0xFF)
         }
     }
 

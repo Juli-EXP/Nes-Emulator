@@ -20,13 +20,15 @@ fun main() {
     cpu.registers.pc = 0xC000
     cpu.debug = true
 
-    while (true) {
+    //cpu.clock()
+
+    do {
         cpu.clock()
-        if (ram.read(0x02) != 0) println("0x02: " + ram.read(0x02))
-        if (ram.read(0x03) != 0) println("0x03: " + ram.read(0x03))
-        if (ram.read(0x0200) != 0) println("0x0200: " + ram.read(0x0200))
-        if (ram.read(0x0300) != 0) println("0x0300: " + ram.read(0x0300))
-    }
+        if (cpuBus.read(0x02) != 0) println("0x02: " + String.format("0x%02X",ram.read(0x02)))
+        if (cpuBus.read(0x03) != 0) println("0x03: " + String.format("0x%02X",ram.read(0x03)))
+        if (cpuBus.read(0x0200) != 0) println("0x0200: " + String.format("0x%02X",ram.read(0x0200)))
+        if (cpuBus.read(0x0300) != 0) println("0x0300: " + String.format("0x%02X",ram.read(0x0300)))
+    }while (cpu.totalClockCount < 26554)
 }
 
 fun oldTest() {

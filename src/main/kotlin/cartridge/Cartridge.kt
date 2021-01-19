@@ -18,9 +18,6 @@ class Cartridge(
 
     //Returns read data from the Cartridge to the CPU bus
     fun cpuRead(addr: Int): Int {
-        //println("Address: ${String.format("0x%04X", addr)}")
-        //println("Mapped Address: ${String.format("0x%04X", mapper!!.cpuRead(addr))}")
-        //println(String.format("0x%04X", programMemory[mapper!!.cpuRead(addr)].toInt()))
         return programMemory[mapper!!.cpuRead(addr)].toInt()
     }
 
@@ -66,7 +63,7 @@ class Cartridge(
         characterMemory = romData.copyOfRange(0, header.chrSize)
         romData = romData.copyOfRange(header.chrSize, romData.size)
 
-        //TODO add INST-ROM and PROM
+        //Placeholder for INST-ROM and PROM
 
         mirroring = header.mirroring
 

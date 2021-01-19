@@ -37,7 +37,7 @@ class CpuBus(
             //Writes to ppu
             in 0x2000..0x3FFF -> ppu.cpuWrite(addr % 0x8, data and 0xFF)
             //Family Basic only
-            in 0x6000..0x7FFF -> println("Illegal write operation at ${String.format("0x%04X")}")
+            in 0x6000..0x7FFF -> println("Illegal write operation at ${String.format("0x%04X", addr)}")
             //Tries to write to Cartridge
             in 0x8000..0xFFFF -> cartridge.cpuWrite(addr, data and 0xFF)
         }

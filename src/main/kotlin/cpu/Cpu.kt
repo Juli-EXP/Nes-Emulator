@@ -67,7 +67,7 @@ class Cpu {
             instruction = instructionTable[opcode]
 
             if (instruction == null) {
-                instruction = Instruction(this::nop, this::imp, 1)
+                instruction = instructionTable[0xEA]    //NOP
             }
 
             cycles = instruction!!.cycles
@@ -356,12 +356,12 @@ class Cpu {
 
         0xE0 to Instruction(this::cpx, this::imm, 2),
         0xE1 to Instruction(this::sbc, this::idx, 6),
-        0xe4 to Instruction(this::cpx, this::zpg, 3),
+        0xE4 to Instruction(this::cpx, this::zpg, 3),
         0xE5 to Instruction(this::sbc, this::zpg, 3),
         0xE6 to Instruction(this::inc, this::zpg, 5),
         0xE8 to Instruction(this::inx, this::imp, 2),
         0xE9 to Instruction(this::sbc, this::imm, 2),
-        0xEA to Instruction(this::nop, this::imp, 2),
+        0xEA to Instruction(this::nop, this::noa, 2),
         0xEC to Instruction(this::cpx, this::abs, 4),
         0xED to Instruction(this::sbc, this::abs, 4),
         0xEE to Instruction(this::inc, this::abs, 6),
@@ -373,7 +373,70 @@ class Cpu {
         0xF8 to Instruction(this::sed, this::imp, 2),
         0xF9 to Instruction(this::sbc, this::aby, 4),
         0xFD to Instruction(this::sbc, this::abx, 4),
-        0xFE to Instruction(this::inc, this::abx, 7)
+        0xFE to Instruction(this::inc, this::abx, 7),
+
+        //Unoffical opcodes
+        0xA3 to Instruction(this::lax, this::idx, 6),
+        0xA7 to Instruction(this::lax, this::zpg, 3),
+        0xAF to Instruction(this::lax, this::abs, 4),
+        0xB3 to Instruction(this::lax, this::idy, 5),
+        0xB7 to Instruction(this::lax, this::zpy, 4),
+        0xBF to Instruction(this::lax, this::aby, 4),
+
+        0x83 to Instruction(this::sax, this::idx, 6),
+        0x87 to Instruction(this::sax, this::zpg, 3),
+        0x8F to Instruction(this::sax, this::abs, 4),
+        0x97 to Instruction(this::sax, this::zpy, 4),
+
+        0xEB to Instruction(this::sbc, this::imm, 2),
+
+        0xC3 to Instruction(this::dcp, this::idx, 8),
+        0xC7 to Instruction(this::dcp, this::zpg, 5),
+        0xCF to Instruction(this::dcp, this::abs, 6),
+        0xD3 to Instruction(this::dcp, this::idy, 8),
+        0xD7 to Instruction(this::dcp, this::zpx, 6),
+        0xDB to Instruction(this::dcp, this::aby, 7),
+        0xDF to Instruction(this::dcp, this::abx, 7),
+
+        0xE3 to Instruction(this::isc, this::idx, 8),
+        0xE7 to Instruction(this::isc, this::zpg, 5),
+        0xEF to Instruction(this::isc, this::abs, 6),
+        0xF3 to Instruction(this::isc, this::idy, 8),
+        0xF7 to Instruction(this::isc, this::zpx, 6),
+        0xFB to Instruction(this::isc, this::aby, 7),
+        0xFF to Instruction(this::isc, this::abx, 7),
+
+        0x23 to Instruction(this::rla, this::idx, 8),
+        0x27 to Instruction(this::rla, this::zpg, 5),
+        0x2F to Instruction(this::rla, this::abs, 6),
+        0x33 to Instruction(this::rla, this::idy, 8),
+        0x37 to Instruction(this::rla, this::zpx, 6),
+        0x3B to Instruction(this::rla, this::aby, 7),
+        0x3F to Instruction(this::rla, this::abx, 7),
+
+        0x63 to Instruction(this::rra, this::idx, 8),
+        0x67 to Instruction(this::rra, this::zpg, 5),
+        0x6F to Instruction(this::rra, this::abs, 6),
+        0x73 to Instruction(this::rra, this::idy, 8),
+        0x77 to Instruction(this::rra, this::zpx, 6),
+        0x7B to Instruction(this::rra, this::aby, 7),
+        0x7F to Instruction(this::rra, this::abx, 7),
+
+        0x03 to Instruction(this::slo, this::idx, 8),
+        0x07 to Instruction(this::slo, this::zpg, 5),
+        0x0F to Instruction(this::slo, this::abs, 6),
+        0x13 to Instruction(this::slo, this::idy, 8),
+        0x17 to Instruction(this::slo, this::zpx, 6),
+        0x1B to Instruction(this::slo, this::aby, 7),
+        0x1F to Instruction(this::slo, this::abx, 7),
+
+        0x43 to Instruction(this::sre, this::idx, 8),
+        0x47 to Instruction(this::sre, this::zpg, 5),
+        0x4F to Instruction(this::sre, this::abs, 6),
+        0x53 to Instruction(this::sre, this::idy, 8),
+        0x57 to Instruction(this::sre, this::zpx, 6),
+        0x5B to Instruction(this::sre, this::aby, 7),
+        0x5F to Instruction(this::sre, this::abx, 7)
     )
 
 
@@ -518,13 +581,20 @@ class Cpu {
         return 0
     }
 
+    //Address mode for all NOPs
+    private fun noa(): Int {
+        return when (opcode) {
+            0x1A, 0x3A, 0x5A, 0x7A, 0xDA, 0xEA, 0xFA -> imp()
+            0x80, 0x82, 0x89, 0xC2, 0xE2 -> imm()
+            0x0C -> abs()
+            0x1C, 0x3C, 0x5C, 0x7C, 0xDC, 0xFC -> abx()
+            0x04, 0x44, 0x64 -> zpg()
+            0x14, 0x34, 0x54, 0x74, 0xD4, 0xF4 -> zpx()
+            else -> 0
+        }
+    }
 
     //Opcodes-----------------------------------------------------------------------------------------------------------
-
-    //No opcode
-    private fun xxx(): Int {
-        return 0
-    }
 
     private fun branch() {
         ++cycles
@@ -582,6 +652,7 @@ class Cpu {
     private fun bcc(): Int {
         if (!registers.c) {
             branch()
+            return 1
         }
         return 0
     }
@@ -590,6 +661,7 @@ class Cpu {
     private fun bcs(): Int {
         if (registers.c) {
             branch()
+            return 1
         }
         return 0
     }
@@ -598,6 +670,7 @@ class Cpu {
     private fun beq(): Int {
         if (registers.z) {
             branch()
+            return 1
         }
         return 0
     }
@@ -617,6 +690,7 @@ class Cpu {
     private fun bmi(): Int {
         if (registers.n) {
             branch()
+            return 1
         }
         return 0
     }
@@ -625,6 +699,7 @@ class Cpu {
     private fun bne(): Int {
         if (!registers.z) {
             branch()
+            return 1
         }
         return 0
     }
@@ -633,6 +708,7 @@ class Cpu {
     private fun bpl(): Int {
         if (!registers.n) {
             branch()
+            return 1
         }
         return 0
     }
@@ -659,6 +735,7 @@ class Cpu {
     private fun bvc(): Int {
         if (!registers.v) {
             branch()
+            return 1
         }
         return 0
     }
@@ -667,6 +744,7 @@ class Cpu {
     private fun bvs(): Int {
         if (registers.v) {
             branch()
+            return 1
         }
         return 0
     }
@@ -871,6 +949,17 @@ class Cpu {
 
     //No operation
     private fun nop(): Int {
+        when (opcode) {
+            0x1A, 0x3A, 0x5A, 0x7A, 0xDA, 0xEA, 0xFA -> cycles
+            0x80, 0x82, 0x89, 0xC2, 0xE2 -> cycles
+            0x0C -> cycles += 2
+            0x1C, 0x3C, 0x5C, 0x7C, 0xDC, 0xFC -> {
+                cycles += 2
+                return 1
+            }
+            0x04, 0x44, 0x64 -> ++cycles
+            0x14, 0x34, 0x54, 0x74, 0xD4, 0xF4 -> cycles += 2
+        }
         return 0
     }
 
@@ -1069,4 +1158,117 @@ class Cpu {
         return 0
     }
 
+    //Unofficial opcodes------------------------------------------------------------------------------------------------
+
+    //LDA then TAX
+    private fun lax(): Int {
+        fetch()
+        registers.a = fetched
+        registers.x = registers.a
+
+        registers.z = registers.a == 0
+        registers.n = (registers.a and 0x80).toBoolean()
+        return 1
+    }
+
+    //Store and of A and X
+    private fun sax(): Int {
+        val result = registers.a and registers.x
+        write(address, result)
+        return 0
+    }
+
+    //DEC then CMP
+    private fun dcp(): Int {
+        fetch()
+        var result = fetched - 1
+        write(address, result)
+
+        fetch()
+        result = registers.a - fetched
+
+        registers.c = registers.a >= fetched
+        registers.z = (result and 0xFF) == 0
+        registers.n = (result and 0x80).toBoolean()
+        return 0
+    }
+
+    //INC the SBC
+    private fun isc(): Int {
+        fetch()
+        var result = (fetched + 1) and 0xFF
+        write(address, result)
+
+        fetch()     //Get the altered value back
+        result = registers.a - fetched - (!registers.c).toInt()
+
+        registers.c = result >= 0
+        registers.z = (result and 0xFF) == 0
+        registers.v = ((result xor registers.a) and (registers.a xor fetched) and 0x80).toBoolean()
+        registers.n = (result and 0x80).toBoolean()
+        registers.a = result and 0xFF
+        return 0
+    }
+
+    //ROL the AND
+    private fun rla(): Int {
+        fetch()
+        val result = (fetched shl 1) or registers.c.toInt()
+        registers.c = (fetched and 0x80).toBoolean()
+        registers.z = (result and 0xFF) == 0
+        registers.n = (result and 0x80).toBoolean()
+
+        write(address, result)
+
+        registers.a = (registers.a and result) and 0xFF
+        return 0
+    }
+
+    //ROR then ADC
+    private fun rra(): Int {
+        fetch()
+        var result = (registers.c.toInt() shl 7) or (fetched shr 1)
+        registers.c = (fetched and 0x01).toBoolean()
+        write(address, result)
+
+        fetch()     //Get the altered value back
+        result = registers.a + fetched + registers.c.toInt()
+
+        registers.c = result > 0xFF
+        registers.z = (result and 0xFF) == 0
+        registers.v = (((registers.a xor fetched).inv() and (registers.a xor result)) and 0x80).toBoolean()
+        registers.n = (result and 0x80).toBoolean()
+        registers.a = result and 0xFF
+        return 0
+    }
+
+    //ASL the ORA
+    private fun slo(): Int {
+        fetch()
+        val result = fetched shl 1
+
+        registers.a = (registers.a or result) and 0xFF
+
+        registers.c = (result and 0xFF00).toBoolean()
+        registers.z = registers.a == 0
+        registers.n = (registers.a and 0x80).toBoolean()
+
+        write(address, result)
+        return 0
+    }
+
+    //LSR then EOR
+    private fun sre(): Int {
+        fetch()
+        val result = fetched shr 1
+
+        registers.a = (registers.a xor result) and 0xFF
+
+        registers.c = (fetched and 0x01).toBoolean()
+        registers.z = (registers.a and 0xFF) == 0
+        registers.n = (registers.a and 0x80).toBoolean()
+
+        write(address, result)
+        return 0
+    }
 }

@@ -1,5 +1,0 @@
-package cpu
-
-class CPUTest {
-
-}

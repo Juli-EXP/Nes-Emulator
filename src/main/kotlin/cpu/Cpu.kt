@@ -27,8 +27,8 @@ class Cpu {
         //TODO change startup states
         registers.sp = 0xFD
 
-        Files.deleteIfExists(Paths.get("log.txt"))
-        Files.createFile(Paths.get("log.txt"))
+        Files.deleteIfExists(Paths.get("logs/log.txt"))
+        Files.createFile(Paths.get("logs/log.txt"))
 
     }
 
@@ -57,7 +57,7 @@ class Cpu {
         if (cycles == 0) {
             if (debug) {
                 Files.write(
-                    Paths.get("log.txt"),
+                    Paths.get("logs/log.txt"),
                     String.format("PC: 0x%04X  ", registers.pc).toByteArray(),
                     StandardOpenOption.APPEND
                 )
@@ -67,7 +67,7 @@ class Cpu {
             instruction = instructionTable[opcode]
 
             if (instruction == null) {
-                instruction = Instruction(this::xxx, this::xxx, 1)
+                instruction = Instruction(this::nop, this::imp, 1)
             }
 
             cycles = instruction!!.cycles
@@ -76,10 +76,11 @@ class Cpu {
 
             if (debug) {
                 Files.write(
-                    Paths.get("log.txt"),
+                    Paths.get("logs/log.txt"),
                     (String.format("OP: 0x%02X  ", opcode) +
                             String.format("ADDR: 0x%04X  ", address) +
-                            "$instruction\t" +
+                            "$instruction" +
+                            "  " +
                             String.format(
                                 "A: %02X  X: %02X  Y: %02X  P: %02X  SP: %02X  CYC: %d\n",
                                 registers.a,
@@ -403,7 +404,7 @@ class Cpu {
         val lo = read(registers.pc++)
         val hi = read(registers.pc++)
 
-        address = (((hi shl 8) or lo) + registers.x)
+        address = (((hi shl 8) or lo) + registers.x) and 0xFFFF
 
         return if ((address and 0xFF00) != (hi shl 8)) {
             1
@@ -418,7 +419,7 @@ class Cpu {
         val lo = read(registers.pc++)
         val hi = read(registers.pc++)
 
-        address = (((hi shl 8) or lo) + registers.y)
+        address = (((hi shl 8) or lo) + registers.y) and 0xFFFF
 
         return if ((address and 0xFF00) != (hi shl 8)) {
             1
@@ -458,8 +459,8 @@ class Cpu {
     private fun idx(): Int {
         val temp = read(registers.pc++)
 
-        val lo = read(temp + registers.x)
-        val hi = read(temp + registers.x + 1)
+        val lo = read((temp + registers.x) and 0xFF)
+        val hi = read((temp + registers.x + 1) and 0xFF)
 
         address = ((hi shl 8) or lo)
         return 0
@@ -469,8 +470,8 @@ class Cpu {
     private fun idy(): Int {
         val temp = read(registers.pc++)
 
-        val lo = read(temp)
-        val hi = read(temp + 1)
+        val lo = read(temp and 0xFF)
+        val hi = read((temp + 1) and 0xFF)
 
         address = (((hi shl 8) or lo) + registers.y) and 0xFFFF
 
@@ -507,13 +508,13 @@ class Cpu {
 
     //Zero page x
     private fun zpx(): Int {
-        address = (read(registers.pc++) + registers.x) and 0xFFFF
+        address = (read(registers.pc++) + registers.x) and 0xFF
         return 0
     }
 
     //Zero page y
     private fun zpy(): Int {
-        address = (read(registers.pc++) + registers.y) and 0xFFFF
+        address = (read(registers.pc++) + registers.y) and 0xFF
         return 0
     }
 
@@ -698,6 +699,7 @@ class Cpu {
     private fun cmp(): Int {
         fetch()
         val result = registers.a - fetched
+
         registers.c = registers.a >= fetched
         registers.z = (result and 0xFF) == 0
         registers.n = (result and 0x80).toBoolean()
@@ -708,6 +710,7 @@ class Cpu {
     private fun cpx(): Int {
         fetch()
         val result = registers.x - fetched
+
         registers.c = registers.x >= fetched
         registers.z = (result and 0xFF) == 0
         registers.n = (result and 0x80).toBoolean()
@@ -921,7 +924,7 @@ class Cpu {
         }
 
         val result = (temp shl 1) or registers.c.toInt()
-        registers.c = (result and 0xFF00).toBoolean()
+        registers.c = (temp and 0x80).toBoolean()
         registers.z = (result and 0xFF) == 0
         registers.n = (result and 0x80).toBoolean()
 
@@ -944,7 +947,7 @@ class Cpu {
 
         val result = (registers.c.toInt() shl 7) or (temp shr 1)
 
-        registers.c = (fetched and 0x01).toBoolean()
+        registers.c = (temp and 0x01).toBoolean()
         registers.z = (result and 0xFF) == 0
         registers.n = (result and 0x80).toBoolean()
 

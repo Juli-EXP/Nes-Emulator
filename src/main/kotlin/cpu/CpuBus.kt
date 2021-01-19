@@ -17,8 +17,6 @@ class CpuBus(
     //Communication-----------------------------------------------------------------------------------------------------
 
     fun read(addr: Int): Int {
-        //return ram.read(addr)and 0xFF
-
         return when (addr) {
             //Reads from ram
             in 0x0000..0x17FF -> ram.read(addr % 0x800) and 0xFF
@@ -33,8 +31,6 @@ class CpuBus(
     }
 
     fun write(addr: Int, data: Int) {
-        //ram.write(addr, data and 0xFF)
-
         when (addr) {
             //Writes to ram
             in 0x0000..0x17FF -> ram.write(addr % 0x800, data and 0xFF)

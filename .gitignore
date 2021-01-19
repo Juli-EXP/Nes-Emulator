@@ -8,5 +8,8 @@
 gradlew
 gradlew.bat
 
-log.txt
-error.txt
+logs/log.txt
+logs/error.txt
+
+logs/log2.txt
+logs/goldenlog2.txt

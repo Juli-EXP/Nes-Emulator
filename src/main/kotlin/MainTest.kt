@@ -3,10 +3,12 @@ import cartridge.RomHeader
 import cpu.*
 import ext.toByteArrayFromHex
 import ppu.Ppu
+import util.parseLog
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 
+private var logFile = "logs/error.txt"
 
 private var cpu = Cpu()
 private var ppu = Ppu()
@@ -21,30 +23,35 @@ fun main() {
     cpu.registers.pc = 0xC000
     cpu.debug = true
 
-    Files.deleteIfExists(Paths.get("error.txt"))
-    Files.createFile(Paths.get("error.txt"))
+    Files.deleteIfExists(Paths.get(logFile))
+    Files.createFile(Paths.get(logFile))
+
 
     do {
         cpu.clock()
-        if(cpu.cycles == 0){
+        if (cpu.cycles == 0) {
             if (cpuBus.read(0x0200) != 0) {
+                //println(String.format("0x0200: 0x%02X", ram.read(0x0200)))
                 Files.write(
-                    Paths.get("error.txt"),
-                    String.format("0x0200: 0x%02X\n", ram.read(0x0200)).toByteArray(),
+                    Paths.get(logFile),
+                    String.format("0x0200: 0x%02X at: %d\n", ram.read(0x0200), cpu.totalClockCount).toByteArray(),
                     StandardOpenOption.APPEND
                 )
-                println(String.format("0x0200: 0x%02X", ram.read(0x0200)))
             }
             if (cpuBus.read(0x0300) != 0) {
+                //println(String.format("0x0300: 0x%02X", ram.read(0x0300)))
                 Files.write(
-                    Paths.get("error.txt"),
-                    String.format("0x0300: 0x%02X\n", ram.read(0x0300)).toByteArray(),
+                    Paths.get(logFile),
+                    String.format("0x0300: 0x%02X at: %d\n", ram.read(0x0300), cpu.totalClockCount).toByteArray(),
                     StandardOpenOption.APPEND
                 )
-                println(String.format("0x0300: 0x%02X", ram.read(0x0300)))
             }
+
         }
     } while (cpu.totalClockCount < 26554)
+
+    println("parsing log")
+    parseLog()
 }
 
 fun oldTest() {

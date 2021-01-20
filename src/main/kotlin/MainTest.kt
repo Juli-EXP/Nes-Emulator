@@ -1,7 +1,5 @@
 import cartridge.Cartridge
-import cartridge.RomHeader
 import cpu.*
-import ext.toByteArrayFromHex
 import ppu.Ppu
 import util.parseLog
 import java.nio.file.Files
@@ -45,10 +43,6 @@ fun main() {
                     String.format("0x0300: 0x%02X at: %d\n", ram.read(0x0300), cpu.totalClockCount).toByteArray(),
                     StandardOpenOption.APPEND
                 )
-            }
-            if (cpu.totalClockCount == 26548) {
-                println(ram.toString())
-                //readLine()
             }
         }
     } while (cpu.totalClockCount <= 26554)

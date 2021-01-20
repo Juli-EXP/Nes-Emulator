@@ -1,11 +1,13 @@
 package ppu
 
+import Ram
 import cartridge.Cartridge
 
 class Ppu {
     //Variables---------------------------------------------------------------------------------------------------------
 
-    private lateinit var cartridge: Cartridge
+    private lateinit var cartridge: Cartridge   //Connected cartridge
+    private val vRam: Ram = Ram()               //Video RAM
 
     companion object {
         const val PPUCTRL = 0x0
@@ -57,12 +59,23 @@ class Ppu {
 
     //Reads from the PPU bus
     fun ppuRead(addr: Int): Int {
-        return 0
+        //if cartridge
+        return when(addr){
+            in 0x0000..0x1FFF -> TODO("Pattern Table")
+            in 0x2000..0x3EFF -> TODO("Nametables")
+            in 0x3F00..0x3FFF -> TODO("Palette RAM")
+            else -> 0
+        }
     }
 
     //Writes to the PPU bus
     fun ppuWrite(addr: Int, data: Int) {
-
+        //if cartridge
+        when(addr){
+            in 0x0000..0x1FFF -> TODO("Pattern Table")
+            in 0x2000..0x3EFF -> TODO("Nametables")
+            in 0x3F00..0x3FFF -> TODO("Palette RAM")
+        }
     }
 
     //Connects the cartridge to the PPU bus

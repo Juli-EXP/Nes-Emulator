@@ -4,8 +4,11 @@ class Instruction(
     val instruction: () -> Int,
     val addressingMode: () -> Int,
     val cycles: Int = 0
-){
-    private fun toInstructionString(function: () -> Int):String{
+) {
+    private val instructionString: String = toInstructionString(instruction)
+    private val addressingString: String = toInstructionString(addressingMode)
+
+    private fun toInstructionString(function: () -> Int): String {
         return function
             .toString()
             .substringAfter("Cpu.")
@@ -14,6 +17,6 @@ class Instruction(
     }
 
     override fun toString(): String {
-        return "INSTR: ${toInstructionString(instruction)}, MODE: ${toInstructionString(addressingMode)}, CYCLES: $cycles"
+        return "INSTR: $instructionString, MODE: $addressingString, CYCLES: $cycles"
     }
 }

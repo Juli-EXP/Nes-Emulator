@@ -24,12 +24,8 @@ class Cpu {
 
 
     init {
-        //TODO change startup states
-        registers.sp = 0xFD
-
         Files.deleteIfExists(Paths.get("logs/log.txt"))
         Files.createFile(Paths.get("logs/log.txt"))
-
     }
 
     //Communication with the bus----------------------------------------------------------------------------------------
@@ -86,7 +82,7 @@ class Cpu {
                                 registers.a,
                                 registers.x,
                                 registers.y,
-                                registers.status,
+                                registers.p,
                                 registers.sp,
                                 totalClockCount
                             )).toByteArray(),
@@ -156,7 +152,7 @@ class Cpu {
             registers.b = false
             registers.u = true
             registers.i = true
-            push(registers.status)
+            push(registers.p)
 
             //Set program counter to tha value of stored at the absolute address
             address = 0xFFFE
@@ -179,7 +175,7 @@ class Cpu {
         registers.b = false
         registers.u = true
         registers.i = true
-        push(registers.status)
+        push(registers.p)
 
         //Set program counter to tha value of stored at the absolute address
         address = 0xFFFA
@@ -722,7 +718,7 @@ class Cpu {
 
         registers.b = true
 
-        push(registers.status)
+        push(registers.p)
 
         registers.b = false
         registers.i = true
@@ -982,7 +978,7 @@ class Cpu {
     //Push processor status
     private fun php(): Int {
         registers.b = true
-        push(registers.status)
+        push(registers.p)
         registers.b = false
         return 0
     }
@@ -997,7 +993,7 @@ class Cpu {
 
     //Pull processor status
     private fun plp(): Int {
-        registers.status = pop()
+        registers.p = pop()
         registers.u = true
         registers.b = false
         return 0
@@ -1050,7 +1046,7 @@ class Cpu {
 
     //Return from interrupt
     private fun rti(): Int {
-        registers.status = pop()
+        registers.p = pop()
         registers.u = true
         registers.pc = pop() or (pop() shl 8)
         return 0

@@ -8,8 +8,8 @@ import java.nio.file.Paths
 class Cartridge(
     private val romFilePath: String
 ) {
-    private val programMemory: ByteArray
-    private val characterMemory: ByteArray
+    private val prgRom: ByteArray
+    private val chrRom: ByteArray
     private val mapper: Mapper?
     private val mirroring: Mirroring
 
@@ -18,23 +18,26 @@ class Cartridge(
 
     //Returns read data from the Cartridge to the CPU bus
     fun cpuRead(addr: Int): Int {
-        return programMemory[mapper!!.cpuRead(addr)].toInt()
+        return prgRom[mapper!!.cpuRead(addr)].toInt()
     }
 
     //Writes data to the Cartridge, if possible
     fun cpuWrite(addr: Int, data: Int) {
-        if (mapper!!.useCartridgeRam(addr)) {
+        if (mapper!!.usePrgRam(addr)) {
             TODO()
         }
     }
 
     //Returns read data from the Cartridge to the PPU bus
     fun ppuRead(addr: Int): Int {
-        return 0
+        return chrRom[mapper!!.ppuRead(addr)].toInt()
     }
 
     //Writes data to the Cartridge, if possible
     fun ppuWrite(addr: Int, data: Int) {
+        if(mapper!!.useChrRam(addr)){
+            TODO()
+        }
     }
 
 
@@ -56,11 +59,11 @@ class Cartridge(
         }
 
         //Read program memory
-        programMemory = romData.copyOfRange(0, header.prgSize)
+        prgRom = romData.copyOfRange(0, header.prgSize)
         romData = romData.copyOfRange(header.prgSize, romData.size)
 
         //Read character memory
-        characterMemory = romData.copyOfRange(0, header.chrSize)
+        chrRom = romData.copyOfRange(0, header.chrSize)
         romData = romData.copyOfRange(header.chrSize, romData.size)
 
         //Placeholder for INST-ROM and PROM

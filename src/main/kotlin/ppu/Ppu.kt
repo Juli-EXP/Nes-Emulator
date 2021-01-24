@@ -6,8 +6,16 @@ import cartridge.Cartridge
 class Ppu {
     //Variables---------------------------------------------------------------------------------------------------------
 
-    private lateinit var cartridge: Cartridge   //Connected cartridge
-    private val vRam: Ram = Ram()               //Video RAM
+    private lateinit var cartridge: Cartridge            //Connected cartridge
+    private val vRam: Ram = Ram()                        //Nametable RAM
+    private val patternRam: Ram = Ram(0x2000)       //Pattern RAM
+    private val paletteRam = Palete2C02.palette          //Palette RAM
+
+
+    private var scanline: Int = 0       //row
+    private var cycle: Int = 0          //collumn
+    private var frameComplete = false   //Indicates if a full frame is complete
+
 
     companion object {
         const val PPUCTRL = 0x0
@@ -60,8 +68,8 @@ class Ppu {
     //Reads from the PPU bus
     fun ppuRead(addr: Int): Int {
         //if cartridge
-        return when(addr){
-            in 0x0000..0x1FFF -> TODO("Pattern Table")
+        return when (addr) {
+            in 0x0000..0x1FFF -> TODO("Pattern Table/Cart")
             in 0x2000..0x3EFF -> TODO("Nametables")
             in 0x3F00..0x3FFF -> TODO("Palette RAM")
             else -> 0
@@ -71,8 +79,8 @@ class Ppu {
     //Writes to the PPU bus
     fun ppuWrite(addr: Int, data: Int) {
         //if cartridge
-        when(addr){
-            in 0x0000..0x1FFF -> TODO("Pattern Table")
+        when (addr) {
+            in 0x0000..0x1FFF -> TODO("Pattern Table/Cart")
             in 0x2000..0x3EFF -> TODO("Nametables")
             in 0x3F00..0x3FFF -> TODO("Palette RAM")
         }
@@ -83,11 +91,20 @@ class Ppu {
         this.cartridge = cartridge
     }
 
-    fun reset(){
+    fun reset() {
 
     }
 
-    fun clock(){
+    fun clock() {
+        ++cycle
+        if (cycle >= 341) {
+            cycle = 0
+            ++scanline
+            if (scanline >= 261) {
+                scanline = -1
+                frameComplete = true
+            }
+        }
 
     }
 

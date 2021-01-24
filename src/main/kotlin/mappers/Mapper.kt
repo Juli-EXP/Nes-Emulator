@@ -1,12 +1,15 @@
 package mappers
 
-abstract class Mapper {
+abstract class Mapper(
+    protected val prgBanks: Int,
+    protected val chrBanks: Int
+) {
 
-    open fun useCartridgeRam(addr: Int): Boolean {
+    open fun usePrgRam(addr: Int): Boolean {
         return false
     }
 
-    open fun usePpuRam(addr: Int): Boolean {
+    open fun useChrRam(addr: Int): Boolean {
         return false
     }
 

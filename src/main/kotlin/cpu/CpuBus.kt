@@ -66,7 +66,10 @@ class CpuBus(
 
     //Performs one clock cycle
     fun clock() {
-        cpu.clock()
         ppu.clock()
+        if(totalClockCount % 3 == 0){
+            cpu.clock()
+        }
+        ++totalClockCount
     }
 }

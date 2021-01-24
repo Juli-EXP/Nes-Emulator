@@ -7,7 +7,7 @@ class Register {
     var a = 0       //Accumulator register
     var x = 0       //X register
     var y = 0       //Y register
-    var sp = 0      //Stack pointer
+    var sp = 0xFD   //Stack pointer
     var pc = 0      //Program counter
 
     var c = false   //Carry
@@ -19,7 +19,7 @@ class Register {
     var v = false   //Overflow
     var n = false   //Negative
 
-    var status: Int //Status register as one byte
+    var p: Int //Status register as one byte
         get() = (c.toInt()) or
                 (z.toInt() shl 1) or
                 (i.toInt() shl 2) or

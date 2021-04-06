@@ -1,5 +1,7 @@
+package ram
+
 class Ram(
-    size: Int = 0x800   //2KB
+    size: Int
 ) {
     //variables---------------------------------------------------------------------------------------------------------
     private val data = IntArray(size)

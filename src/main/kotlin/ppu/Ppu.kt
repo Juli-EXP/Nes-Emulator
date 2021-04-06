@@ -1,26 +1,41 @@
 package ppu
 
-import Ram
+import ram.Ram
 import cartridge.Cartridge
+import ext.clearBit
+import ppu.registers.PpuControl
+import ppu.registers.PpuMask
+import ppu.registers.PpuStatus
 
 class Ppu {
     //Variables---------------------------------------------------------------------------------------------------------
 
-    private lateinit var cartridge: Cartridge            //Connected cartridge
-    private val vRam: Ram = Ram(0x200)              //Nametable RAM / VRAM
-    private val patternRam: Ram = Ram(0x2000)       //Pattern RAM
-    private val paletteRam = Ram(0x20)              //Palette RAM
+    //Memory
+    private lateinit var cartridge: Cartridge           //Connected cartridge
+    private val nametables: Ram = Ram(0x800)       //Stores the layout of the sprites (VRAM)
+    private val oam: Ram = Ram(0x100)              //Object attribute memory
+    private val paletteRam: Ram = Ram(0x20)        //Stores the color palette
 
-    private val colorPalette = Palete2C02.palette
+    private val paletteTable = Palete2C02.palette
 
-    private var scanline: Int = 0       //Row
-    private var lineCycle: Int = 0      //Collumn
-    private var frameComplete = false   //Indicates if a full frame is complete
+    //Displaying stuff
+    private var scanline: Int = 0                       //Row
+    private var scanLineCycle: Int = 0                  //Collumn
+    private var frameComplete = false                   //Indicates if a full frame is complete
 
-    private var oamAddress = 0x00
-    private val oamData: Nothing = TODO()
+    //Registers
+    private var ppuControl = PpuControl(0)
+    private var ppuStatus = PpuStatus(0)
+    private var ppuMask = PpuMask(0)
 
-    private val registers = IntArray(0x08)
+    //Other variables
+    private var ppuAddress = 0
+    private var addressLatch = 0
+    private var ppuDataBuffer = 0
+    private var oamAddress = 0
+
+    var nonMaskableInterrupt = false
+
 
     companion object {
         const val PPUCTRL = 0x0
@@ -31,72 +46,89 @@ class Ppu {
         const val PPUSCROLL = 0x5
         const val PPUADDR = 0x6
         const val PPUDATA = 0x7
+        const val OAMDMA = 0x4014
     }
 
 
     //Communication with the bus----------------------------------------------------------------------------------------
 
-    //Reads from the CPU bus
+    //Reads data from the PPU registers
     fun cpuRead(addr: Int): Int {
-        return when (addr) {
+        var data = 0
+        when (addr) {
             PPUSTATUS -> {
-                TODO()
+                data = ppuStatus.value or (ppuDataBuffer and 0x1F)
+                ppuStatus = PpuStatus(ppuStatus.value.clearBit(7))  //Clear vertical blank
+                addressLatch = 0
             }
             OAMDATA -> {
-                TODO()
+                data = oam.read(addr)
             }
             PPUDATA -> {
-                TODO()
-            }
-            else -> 0
-        }
+                data = ppuDataBuffer
+                ppuDataBuffer = ppuRead(ppuAddress)
 
+                //Immediate read if the address is in the palette range
+                if (ppuAddress in 0x3F00..0x3FFF) {
+                    data = ppuDataBuffer
+                }
+
+                ppuAddress += if (ppuControl.incrementMode) 32 else 1
+            }
+        }
+        return data
     }
 
-    //Writes to the CPU bus
+    //Writes data to the PPU registers
     fun cpuWrite(addr: Int, data: Int) {
         when (addr) {
             PPUCTRL -> {
-                registers[PPUCTRL] = data
-                TODO("Bits 0 and 1")
+                ppuControl = PpuControl(data)
             }
             PPUMASK -> {
-                registers[PPUMASK] = data
+                ppuMask = PpuMask(data)
             }
             OAMADDR -> {
                 oamAddress = data
             }
             OAMDATA -> {
-                TODO()
+                oam.write(oamAddress, data)
             }
             PPUSCROLL -> {
                 TODO()
             }
             PPUADDR -> {
-                TODO()
+                if (addressLatch == 0) {
+                    addressLatch = 1
+                    ppuAddress = (ppuAddress and 0x00FF) or (data shl 8)
+                } else {
+                    addressLatch = 0
+                    ppuAddress = (ppuAddress and 0xFF00) or data
+                }
             }
             PPUDATA -> {
-                TODO()
+                ppuWrite(ppuAddress, data)
+                ppuAddress += if (ppuControl.incrementMode) 32 else 1
             }
         }
     }
 
     //Reads from the PPU bus
-    fun ppuRead(addr: Int): Int {
-        //if cartridge TODO(Cartridge)
+    private fun ppuRead(addr: Int): Int {
         when (addr) {
             //Pattern Table
             in 0x0000..0x1FFF -> {
-                return vRam.read(addr) and 0xFF
+                return cartridge.ppuRead(addr) and 0xFF
             }
             //Nametables
             in 0x2000..0x3EFF -> {
-                TODO()
+                TODO("Check for dynamic mirroring")
             }
             //Palette
             in 0x3F00..0x3FFF -> {
                 var newAddr = addr and 0x1F
 
+                //Mirroring for the palette
                 when (newAddr) {
                     0x10 -> newAddr = 0x00
                     0x14 -> newAddr = 0x04
@@ -110,12 +142,11 @@ class Ppu {
     }
 
     //Writes to the PPU bus
-    fun ppuWrite(addr: Int, data: Int) {
-        //if cartridge
+    private fun ppuWrite(addr: Int, data: Int) {
         when (addr) {
             //Pattern Table
             in 0x0000..0x1FFF -> {
-                vRam.write(addr, data and 0xFF)
+                cartridge.ppuWrite(addr, data and 0xFF)
             }
             //Nametables
             in 0x2000..0x3EFF -> {
@@ -125,6 +156,7 @@ class Ppu {
             in 0x3F00..0x3FFF -> {
                 var newAddr = addr and 0x1F
 
+                //Mirroring for the palette
                 when (newAddr) {
                     0x10 -> newAddr = 0x00
                     0x14 -> newAddr = 0x04
@@ -142,13 +174,13 @@ class Ppu {
     }
 
     fun reset() {
-
+        TODO()
     }
 
     fun clock() {
-        ++lineCycle
-        if (lineCycle >= 341) {
-            lineCycle = 0
+        ++scanLineCycle
+        if (scanLineCycle >= 341) {
+            scanLineCycle = 0
             ++scanline
             if (scanline >= 261) {
                 scanline = -1
@@ -159,6 +191,4 @@ class Ppu {
 
     }
 
-
-    //Graphics stuff----------------------------------------------------------------------------------------------------
 }

@@ -1,6 +1,9 @@
 import cartridge.Cartridge
 import cpu.*
+import ext.toggleBit
 import ppu.Ppu
+import ppu.registers.PpuStatus
+import ram.Ram
 import util.parseLog
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -10,15 +13,21 @@ private var logFile = "logs/error.txt"
 
 private var cpu = Cpu()
 private var ppu = Ppu()
-private var ram = Ram()
+private var ram = Ram(0x800)
 private var cartridge = Cartridge("roms/nestest.nes")
 
 private var cpuBus = CpuBus(cpu, ppu, ram)
 
 fun main() {
+    //nestestTest()
+    test2()
+}
+
+//Test nesttest.nes rom
+fun nestestTest() {
     cpuBus.connectCartridge(cartridge)
 
-    cpu.registers.pc = 0xC000
+    cpu.registers.pc = 0xC000   //Start of the headless program
     cpu.debug = true
 
     Files.deleteIfExists(Paths.get(logFile))
@@ -27,7 +36,8 @@ fun main() {
 
     do {
         cpu.clock()
-        if (cpu.cycles == 0) {
+        if (cpu.cycleComplete) {
+            //Read error codes from specific locations
             if (cpuBus.read(0x0200) != 0) {
                 //println(String.format("0x0200: 0x%02X", ram.read(0x0200)))
                 Files.write(
@@ -51,3 +61,9 @@ fun main() {
     parseLog()
 }
 
+fun test2() {
+    var ppuStatus = PpuStatus(205)
+    println(ppuStatus)
+    ppuStatus = PpuStatus(ppuStatus.value.toggleBit(0))
+    println(ppuStatus)
+}

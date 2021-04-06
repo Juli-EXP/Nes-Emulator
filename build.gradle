@@ -4,6 +4,9 @@ plugins {
 
 compileKotlin {
     kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions {
+        freeCompilerArgs = ["-Xinline-classes"]
+    }
 
 }
 
@@ -19,12 +22,6 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
 
-    implementation "no.tornado:tornadofx:1.7.20"
+    implementation "no.tornado:tornadofx:$tornadoFxVersion"
 
-    testImplementation "org.junit.jupiter:junit-jupiter-api:5.7.0"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
-}
-
-test {
-    useJUnitPlatform()
 }

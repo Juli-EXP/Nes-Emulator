@@ -13,14 +13,17 @@ class Cpu {
 
     var registers = Register()
 
-    var opcode: Int = 0                     //Current opcode
-    var instruction: Instruction? = null    //Current instruction
-    var fetched: Int = 0                    //Fetched value
-    var cycles: Int = 0                     //How many cycles are left
-    var address: Int = 0                    //Absolute address
+    private var opcode: Int = 0                     //Current opcode
+    private var instruction: Instruction? = null    //Current instruction
+    private var fetched: Int = 0                    //Fetched value
+    private var address: Int = 0                    //Absolute address
+    private var cycles: Int = 0                     //How many cycles are left
 
-    var totalClockCount: Int = 7            //Total clock count
-    var debug: Boolean = false
+    val cycleComplete: Boolean                      //Returns true if the cpu cycle is complete
+        get() = cycles == 0
+
+    var totalClockCount: Int = 7                    //Total clock count
+    var debug: Boolean = false                      //Enable/Disable debug mode
 
 
     init {
@@ -62,6 +65,7 @@ class Cpu {
             opcode = read(registers.pc++)
             instruction = instructionTable[opcode]
 
+            //Sets instruction to NOP if the opcode doesnt't belong to any instruction
             if (instruction == null) {
                 instruction = instructionTable[0xEA]    //NOP
             }
@@ -154,7 +158,7 @@ class Cpu {
             registers.i = true
             push(registers.p)
 
-            //Set program counter to tha value of stored at the absolute address
+            //Set program counter to the value stored at FFFE
             address = 0xFFFE
             val lo = read(address)
             val hi = read(address + 1)
@@ -177,7 +181,7 @@ class Cpu {
         registers.i = true
         push(registers.p)
 
-        //Set program counter to tha value of stored at the absolute address
+        //Set program counter to the value stored at FFFA
         address = 0xFFFA
         val lo = read(address)
         val hi = read(address + 1)
@@ -371,7 +375,7 @@ class Cpu {
         0xFD to Instruction(this::sbc, this::abx, 4),
         0xFE to Instruction(this::inc, this::abx, 7),
 
-        //Unoffical opcodes
+        //Unoffical opcodes---------------------------------------------------------------------------------------------
         0xA3 to Instruction(this::lax, this::idx, 6),
         0xA7 to Instruction(this::lax, this::zpg, 3),
         0xAF to Instruction(this::lax, this::abs, 4),
@@ -441,11 +445,6 @@ class Cpu {
 
     //The addressing modes return 1 if an additional clock cycle is needed
     //Addressing modes--------------------------------------------------------------------------------------------------
-
-    //Accumulator
-    fun acc(): Int {
-        return 0
-    }
 
     //Absolute
     //Uses a 16-bit address
@@ -586,7 +585,7 @@ class Cpu {
             0x1C, 0x3C, 0x5C, 0x7C, 0xDC, 0xFC -> abx()
             0x04, 0x44, 0x64 -> zpg()
             0x14, 0x34, 0x54, 0x74, 0xD4, 0xF4 -> zpx()
-            else -> 0
+            else -> throw CpuException("No addressing mode for opcode: $opcode was found")
         }
     }
 
@@ -953,7 +952,7 @@ class Cpu {
                 cycles += 2
                 return 1
             }
-            0x04, 0x44, 0x64 -> ++cycles
+            0x04, 0x44, 0x64 -> cycles += 1
             0x14, 0x34, 0x54, 0x74, 0xD4, 0xF4 -> cycles += 2
         }
         return 0
@@ -1189,7 +1188,7 @@ class Cpu {
         return 0
     }
 
-    //INC the SBC
+    //INC then SBC
     private fun isc(): Int {
         fetch()
         var result = (fetched + 1) and 0xFF
@@ -1206,7 +1205,7 @@ class Cpu {
         return 0
     }
 
-    //ROL the AND
+    //ROL then AND
     private fun rla(): Int {
         fetch()
         val result = (fetched shl 1) or registers.c.toInt()
@@ -1238,7 +1237,7 @@ class Cpu {
         return 0
     }
 
-    //ASL the ORA
+    //ASL then ORA
     private fun slo(): Int {
         fetch()
         val result = fetched shl 1

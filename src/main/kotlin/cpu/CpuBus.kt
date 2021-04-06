@@ -1,7 +1,7 @@
 package cpu
 
 import cartridge.Cartridge
-import Ram
+import ram.Ram
 import ppu.Ppu
 
 class CpuBus(
@@ -67,9 +67,18 @@ class CpuBus(
     //Performs one clock cycle
     fun clock() {
         ppu.clock()
+        //CPU works at a third of the PPU speed
         if(totalClockCount % 3 == 0){
             cpu.clock()
         }
+
+        if(ppu.nonMaskableInterrupt){
+            ppu.nonMaskableInterrupt = false
+            cpu.nonMaskableInterrupt()
+        }
+
+
+
         ++totalClockCount
     }
 }

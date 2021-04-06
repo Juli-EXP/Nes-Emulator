@@ -2,15 +2,17 @@ package cartridge
 
 import mappers.Mapper
 import mappers.Mapper000
+import mappers.MapperException
 import java.nio.file.Files
 import java.nio.file.Paths
 
+
 class Cartridge(
-    private val romFilePath: String
+    romFilePath: String
 ) {
-    private val prgRom: ByteArray
-    private val chrRom: ByteArray
-    private val mapper: Mapper?
+    private val prgMemory: ByteArray
+    private val chrMemory: ByteArray
+    private val mapper: Mapper
     private val mirroring: Mirroring
 
 
@@ -18,25 +20,37 @@ class Cartridge(
 
     //Returns read data from the Cartridge to the CPU bus
     fun cpuRead(addr: Int): Int {
-        return prgRom[mapper!!.cpuRead(addr)].toInt()
+        val mappedAddress = mapper.cpuRead(addr)
+        return if (mappedAddress != null) {
+            prgMemory[mappedAddress].toInt()
+        } else {
+            0
+        }
     }
 
     //Writes data to the Cartridge, if possible
     fun cpuWrite(addr: Int, data: Int) {
-        if (mapper!!.usePrgRam(addr)) {
-            TODO()
+        val mappedAddress = mapper.cpuWrite(addr)
+        if (mappedAddress != null) {
+            prgMemory[mappedAddress] = data.toByte()
         }
     }
 
     //Returns read data from the Cartridge to the PPU bus
     fun ppuRead(addr: Int): Int {
-        return chrRom[mapper!!.ppuRead(addr)].toInt()
+        val mappedAddress = mapper.ppuRead(addr)
+        return if (mappedAddress != null) {
+            chrMemory[mappedAddress].toInt()
+        } else {
+            0
+        }
     }
 
     //Writes data to the Cartridge, if possible
     fun ppuWrite(addr: Int, data: Int) {
-        if(mapper!!.useChrRam(addr)){
-            TODO()
+        val mappedAddress = mapper.ppuWrite(addr)
+        if (mappedAddress != null) {
+            chrMemory[mappedAddress] = data.toByte()
         }
     }
 
@@ -59,11 +73,11 @@ class Cartridge(
         }
 
         //Read program memory
-        prgRom = romData.copyOfRange(0, header.prgSize)
+        prgMemory = romData.copyOfRange(0, header.prgSize)
         romData = romData.copyOfRange(header.prgSize, romData.size)
 
         //Read character memory
-        chrRom = romData.copyOfRange(0, header.chrSize)
+        chrMemory = romData.copyOfRange(0, header.chrSize)
         romData = romData.copyOfRange(header.chrSize, romData.size)
 
         //Placeholder for INST-ROM and PROM
@@ -72,7 +86,7 @@ class Cartridge(
 
         mapper = when (header.mapper) {
             0 -> Mapper000(header.prgBanks, header.chrBanks)
-            else -> null
+            else -> throw MapperException()
         }
     }
 }

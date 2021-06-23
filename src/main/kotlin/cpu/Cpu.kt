@@ -8,7 +8,7 @@ import java.nio.file.StandardOpenOption
 
 
 class Cpu {
-    //Variables---------------------------------------------------------------------------------------------------------
+    // Variables--------------------------------------------------------------------------------------------------------
     private lateinit var cpuBus: CpuBus
 
     var registers = Register()
@@ -17,43 +17,43 @@ class Cpu {
     private var instruction: Instruction? = null    //Current instruction
     private var fetched: Int = 0                    //Fetched value
     private var address: Int = 0                    //Absolute address
-    private var cycles: Int = 0                     //How many cycles are left
+    private var cyclesLeft: Int = 0                 //How many cycles are left
 
-    val cycleComplete: Boolean                      //Returns true if the cpu cycle is complete
-        get() = cycles == 0
+    val isCycleComplete: Boolean                      //Returns true if the cpu cycle is complete
+        get() = cyclesLeft == 0
 
-    var totalClockCount: Int = 7                    //Total clock count
+    var totalClockCount: Int = 7                    //Total clock count, currently starts at 7. TODO change later
     var debug: Boolean = false                      //Enable/Disable debug mode
 
-
+    // TODO delete this
     init {
         Files.deleteIfExists(Paths.get("logs/log.txt"))
         Files.createFile(Paths.get("logs/log.txt"))
     }
 
-    //Communication with the bus----------------------------------------------------------------------------------------
+    // Communication with the bus---------------------------------------------------------------------------------------
 
-    //Connects the CPU to the bus
+    // Connects the CPU to the bus
     fun connectBus(cpuBus: CpuBus) {
         this.cpuBus = cpuBus
     }
 
-    //reads from the bus
-    private fun read(addr: Int): Int {
-        return cpuBus.read(addr)
+    // Reads data from the bus
+    private fun read(address: Int): Int {
+        return cpuBus.read(address)
     }
 
-    //writes to the bus
-    private fun write(addr: Int, data: Int) {
-        cpuBus.write(addr, data)
+    // Writes data to the bus
+    private fun write(address: Int, data: Int) {
+        cpuBus.write(address, data)
     }
 
 
-    //CPU functions-----------------------------------------------------------------------------------------------------
+    // CPU functions----------------------------------------------------------------------------------------------------
 
-    //Performs one clock cycle
+    // Performs one clock cycle, TODO change everything
     fun clock() {
-        if (cycles == 0) {
+        if (cyclesLeft == 0) {
             if (debug) {
                 Files.write(
                     Paths.get("logs/log.txt"),
@@ -65,12 +65,12 @@ class Cpu {
             opcode = read(registers.pc++)
             instruction = instructionTable[opcode]
 
-            //Sets instruction to NOP if the opcode doesnt't belong to any instruction
+            // Sets instruction to NOP if the opcode doesn't belong to any instruction
             if (instruction == null) {
                 instruction = instructionTable[0xEA]    //NOP
             }
 
-            cycles = instruction!!.cycles
+            cyclesLeft = instruction!!.cycles
 
             val additionalCycle1 = instruction!!.addressingMode()
 
@@ -96,12 +96,12 @@ class Cpu {
 
             val additionalCycle2 = instruction!!.instruction()
 
-            cycles += (additionalCycle1 and additionalCycle2)
+            cyclesLeft += (additionalCycle1 and additionalCycle2)
         }
 
         ++totalClockCount
 
-        --cycles
+        --cyclesLeft
     }
 
     //Prints the current state of the CPU
@@ -118,12 +118,12 @@ class Cpu {
         print(debug)
     }
 
-    //Resets the CPU
+    // Resets the CPU
     fun reset() {
-        //reset clock count
+        // Reset clock count
         totalClockCount = 0
 
-        //Set program counter
+        // Set program counter
         address = 0xFFFC
 
         val lo = read(address + 0)
@@ -131,21 +131,21 @@ class Cpu {
 
         registers.pc = (hi shl 8) or lo
 
-        //Reset registers
+        // Reset registers
         registers.a = 0
         registers.x = 0
         registers.y = 0
         registers.sp = 0xFD
         registers.resetStatus()
 
-        //Reset any other var
+        // Reset any other var
         address = 0
         fetched = 0
 
-        cycles = 8
+        cyclesLeft = 8
     }
 
-    //Interrupt request
+    // Interrupt request
     fun interruptRequest() {
         if (!registers.i) {
             //Save current program counter to the stack
@@ -165,33 +165,33 @@ class Cpu {
             registers.pc = (hi shl 8) or lo
 
             //uses 8 clock cycles
-            cycles = 7
+            cyclesLeft = 7
         }
     }
 
-    //Interrupt request, but it cannot be disabled
+    // Interrupt request, but it cannot be disabled
     fun nonMaskableInterrupt() {
-        //Save current program counter to the stack
+        // Save current program counter to the stack
         push((registers.pc shr 8))
         push(registers.pc)
 
-        //Push status register to
+        // Push status register to
         registers.b = false
         registers.u = true
         registers.i = true
         push(registers.p)
 
-        //Set program counter to the value stored at FFFA
+        // Set program counter to the value stored at FFFA
         address = 0xFFFA
         val lo = read(address)
         val hi = read(address + 1)
         registers.pc = (hi shl 8) or lo
 
-        //uses 8 clock cycles
-        cycles = 8
+        // Uses 8 clock cycles
+        cyclesLeft = 8
     }
 
-    //Gets data depending on the current addressing mode
+    // Gets data depending on the current addressing mode
     private fun fetch() {
         if (instruction!!.addressingMode != this::imp)
             fetched = read(address)
@@ -206,7 +206,7 @@ class Cpu {
     }
 
 
-    //Fill instruction list---------------------------------------------------------------------------------------------
+    // Fill instruction list--------------------------------------------------------------------------------------------
     private val instructionTable = mapOf(
         0x00 to Instruction(this::brk, this::imp, 7),
         0x01 to Instruction(this::ora, this::idx, 6),
@@ -375,7 +375,7 @@ class Cpu {
         0xFD to Instruction(this::sbc, this::abx, 4),
         0xFE to Instruction(this::inc, this::abx, 7),
 
-        //Unoffical opcodes---------------------------------------------------------------------------------------------
+        // Unofficial opcodes-------------------------------------------------------------------------------------------
         0xA3 to Instruction(this::lax, this::idx, 6),
         0xA7 to Instruction(this::lax, this::zpg, 3),
         0xAF to Instruction(this::lax, this::abs, 4),
@@ -440,14 +440,14 @@ class Cpu {
     )
 
 
-    //Here is a useful link with all the addressing modes and opcodes:
-    //https://www.masswerk.at/6502/6502_instruction_set.html
+    // Here is a useful link with all the addressing modes and opcodes:
+    // https://www.masswerk.at/6502/6502_instruction_set.html
 
-    //The addressing modes return 1 if an additional clock cycle is needed
-    //Addressing modes--------------------------------------------------------------------------------------------------
+    // The addressing modes return 1 if an additional clock cycle is needed
+    // Addressing modes-------------------------------------------------------------------------------------------------
 
-    //Absolute
-    //Uses a 16-bit address
+    // Absolute
+    // Uses a 16-bit address
     private fun abs(): Int {
         val lo = read(registers.pc++)
         val hi = read(registers.pc++)
@@ -456,8 +456,8 @@ class Cpu {
         return 0
     }
 
-    //Absolute x
-    //Absolute with a offset of x
+    // Absolute x
+    // Absolute with a offset of x
     private fun abx(): Int {
         val lo = read(registers.pc++)
         val hi = read(registers.pc++)
@@ -471,8 +471,8 @@ class Cpu {
         }
     }
 
-    //Absolute y
-    //Absolute with a offset of y
+    // Absolute y
+    // Absolute with a offset of y
     private fun aby(): Int {
         val lo = read(registers.pc++)
         val hi = read(registers.pc++)
@@ -486,25 +486,25 @@ class Cpu {
         }
     }
 
-    //Immediate
+    // Immediate
     private fun imm(): Int {
         address = registers.pc++ and 0xFFFF
         return 0
     }
 
-    //Implied
+    // Implied
     private fun imp(): Int {
         return 0
     }
 
-    //Indirect
+    // Indirect
     private fun ind(): Int {
         val lo = read(registers.pc++)
         val hi = read(registers.pc++)
 
         val temp = ((hi shl 8) or lo)
 
-        //simulating a hardware bug
+        // Simulates a hardware bug
         address = if (lo == 0xFF) {
             (read(temp and 0xFF00) shl 8) or read(temp)
         } else {
@@ -513,7 +513,7 @@ class Cpu {
         return 0
     }
 
-    //Indirect x
+    // Indirect x
     private fun idx(): Int {
         val temp = read(registers.pc++)
 
@@ -524,7 +524,7 @@ class Cpu {
         return 0
     }
 
-    //Indirect y
+    // Indirect y
     private fun idy(): Int {
         val temp = read(registers.pc++)
 
@@ -540,11 +540,11 @@ class Cpu {
         }
     }
 
-    //Relative
+    // Relative
     private fun rel(): Int {
         var offset = read(registers.pc++)
 
-        //checks if number is bigger than 127
+        // Checks if number is bigger than 127
         if ((offset and 0x80).toBoolean()) {
             offset -= 0x100
         }
@@ -558,25 +558,25 @@ class Cpu {
         }
     }
 
-    //Zero page
+    // Zero page
     private fun zpg(): Int {
         address = read(registers.pc++)
         return 0
     }
 
-    //Zero page x
+    // Zero page x
     private fun zpx(): Int {
         address = (read(registers.pc++) + registers.x) and 0xFF
         return 0
     }
 
-    //Zero page y
+    // Zero page y
     private fun zpy(): Int {
         address = (read(registers.pc++) + registers.y) and 0xFF
         return 0
     }
 
-    //Address mode for all NOPs
+    // Address mode for all NOPs
     private fun noa(): Int {
         return when (opcode) {
             0x1A, 0x3A, 0x5A, 0x7A, 0xDA, 0xEA, 0xFA -> imp()
@@ -589,14 +589,14 @@ class Cpu {
         }
     }
 
-    //Opcodes-----------------------------------------------------------------------------------------------------------
+    // Opcodes----------------------------------------------------------------------------------------------------------
 
     private fun branch() {
-        ++cycles
+        ++cyclesLeft
         registers.pc = address
     }
 
-    //And with carry
+    // And with carry
     private fun adc(): Int {
         fetch()
         val result = registers.a + fetched + registers.c.toInt()
@@ -610,7 +610,7 @@ class Cpu {
         return 1
     }
 
-    //And (with accumulator)
+    // And (with accumulator)
     private fun and(): Int {
         fetch()
         registers.a = registers.a and fetched
@@ -620,7 +620,7 @@ class Cpu {
         return 1
     }
 
-    //Arithmetic shift left
+    // Arithmetic shift left
     private fun asl(): Int {
         fetch()
         val temp = if (instruction!!.addressingMode == this::imp) {
@@ -643,7 +643,7 @@ class Cpu {
         return 0
     }
 
-    //Branch on carry clear
+    // Branch on carry clear
     private fun bcc(): Int {
         if (!registers.c) {
             branch()
@@ -652,7 +652,7 @@ class Cpu {
         return 0
     }
 
-    //Branch on carry set
+    // Branch on carry set
     private fun bcs(): Int {
         if (registers.c) {
             branch()
@@ -661,7 +661,7 @@ class Cpu {
         return 0
     }
 
-    //Branch on equal (zero set)
+    // Branch on equal (zero set)
     private fun beq(): Int {
         if (registers.z) {
             branch()
@@ -670,7 +670,7 @@ class Cpu {
         return 0
     }
 
-    //Bit test
+    // Bit test
     private fun bit(): Int {
         fetch()
         val result = registers.a and fetched
@@ -681,7 +681,7 @@ class Cpu {
         return 0
     }
 
-    //Branch on minus (negative set)
+    // Branch on minus (negative set)
     private fun bmi(): Int {
         if (registers.n) {
             branch()
@@ -690,7 +690,7 @@ class Cpu {
         return 0
     }
 
-    //Branch on not equal (zero clear)
+    // Branch on not equal (zero clear)
     private fun bne(): Int {
         if (!registers.z) {
             branch()
@@ -699,7 +699,7 @@ class Cpu {
         return 0
     }
 
-    //Branch on plus (negative clear)
+    // Branch on plus (negative clear)
     private fun bpl(): Int {
         if (!registers.n) {
             branch()
@@ -708,7 +708,7 @@ class Cpu {
         return 0
     }
 
-    //Break / Interrupt
+    // Break / Interrupt
     private fun brk(): Int {
         ++registers.pc
 
@@ -726,7 +726,7 @@ class Cpu {
         return 0
     }
 
-    //Branch on overflow clear
+    // Branch on overflow clear
     private fun bvc(): Int {
         if (!registers.v) {
             branch()
@@ -735,7 +735,7 @@ class Cpu {
         return 0
     }
 
-    //Branch on overflow set
+    // Branch on overflow set
     private fun bvs(): Int {
         if (registers.v) {
             branch()
@@ -744,31 +744,31 @@ class Cpu {
         return 0
     }
 
-    //Clear carry
+    // Clear carry
     private fun clc(): Int {
         registers.c = false
         return 0
     }
 
-    //Clear decimal
+    // Clear decimal
     private fun cld(): Int {
         registers.d = false
         return 0
     }
 
-    //Clear interrupt disable
+    // Clear interrupt disable
     private fun cli(): Int {
         registers.i = false
         return 0
     }
 
-    //Clear overflow
+    // Clear overflow
     private fun clv(): Int {
         registers.v = false
         return 0
     }
 
-    //Compare (with accumulator)
+    // Compare (with accumulator)
     private fun cmp(): Int {
         fetch()
         val result = registers.a - fetched
@@ -779,7 +779,7 @@ class Cpu {
         return 1
     }
 
-    //Compare with x
+    // Compare with x
     private fun cpx(): Int {
         fetch()
         val result = registers.x - fetched
@@ -790,7 +790,7 @@ class Cpu {
         return 0
     }
 
-    //Compare with y
+    // Compare with y
     private fun cpy(): Int {
         fetch()
         val result = registers.y - fetched
@@ -801,7 +801,7 @@ class Cpu {
         return 0
     }
 
-    //Decrement
+    // Decrement
     private fun dec(): Int {
         fetch()
         val result = fetched - 1
@@ -812,7 +812,7 @@ class Cpu {
         return 0
     }
 
-    //Decrement x
+    // Decrement x
     private fun dex(): Int {
         --registers.x
         registers.x = registers.x and 0xFF
@@ -822,7 +822,7 @@ class Cpu {
         return 0
     }
 
-    //Decrement y
+    // Decrement y
     private fun dey(): Int {
         --registers.y and 0xFF
         registers.y = registers.y and 0xFF
@@ -832,7 +832,7 @@ class Cpu {
         return 0
     }
 
-    //Exclusive or (with accumulator)
+    // Exclusive or (with accumulator)
     private fun eor(): Int {
         fetch()
         registers.a = registers.a xor fetched
@@ -842,7 +842,7 @@ class Cpu {
         return 1
     }
 
-    //Increment
+    // Increment
     private fun inc(): Int {
         fetch()
         val result = fetched + 1
@@ -853,7 +853,7 @@ class Cpu {
         return 0
     }
 
-    //Increment x
+    // Increment x
     private fun inx(): Int {
         ++registers.x
         registers.x = registers.x and 0xFF
@@ -863,7 +863,7 @@ class Cpu {
         return 0
     }
 
-    //Increment y
+    // Increment y
     private fun iny(): Int {
         ++registers.y and 0xFF
         registers.y = registers.y and 0xFF
@@ -873,13 +873,13 @@ class Cpu {
         return 0
     }
 
-    //Jump
+    // Jump
     private fun jmp(): Int {
         registers.pc = address
         return 0
     }
 
-    //Jump to subroutine
+    // Jump to subroutine
     private fun jsr(): Int {
         --registers.pc
         push((registers.pc shr 8))
@@ -889,7 +889,7 @@ class Cpu {
         return 0
     }
 
-    //Load accumulator
+    // Load accumulator
     private fun lda(): Int {
         fetch()
         registers.a = fetched
@@ -899,7 +899,7 @@ class Cpu {
         return 1
     }
 
-    //Load x
+    // Load x
     private fun ldx(): Int {
         fetch()
         registers.x = fetched
@@ -909,7 +909,7 @@ class Cpu {
         return 1
     }
 
-    //Load y
+    // Load y
     private fun ldy(): Int {
         fetch()
         registers.y = fetched
@@ -919,7 +919,7 @@ class Cpu {
         return 1
     }
 
-    //Logical shift right
+    // Logical shift right
     private fun lsr(): Int {
         fetch()
         val temp = if (instruction!!.addressingMode == this::imp) {
@@ -942,23 +942,23 @@ class Cpu {
         return 0
     }
 
-    //No operation
+    // No operation
     private fun nop(): Int {
         when (opcode) {
-            0x1A, 0x3A, 0x5A, 0x7A, 0xDA, 0xEA, 0xFA -> cycles
-            0x80, 0x82, 0x89, 0xC2, 0xE2 -> cycles
-            0x0C -> cycles += 2
+            0x1A, 0x3A, 0x5A, 0x7A, 0xDA, 0xEA, 0xFA -> cyclesLeft
+            0x80, 0x82, 0x89, 0xC2, 0xE2 -> cyclesLeft
+            0x0C -> cyclesLeft += 2
             0x1C, 0x3C, 0x5C, 0x7C, 0xDC, 0xFC -> {
-                cycles += 2
+                cyclesLeft += 2
                 return 1
             }
-            0x04, 0x44, 0x64 -> cycles += 1
-            0x14, 0x34, 0x54, 0x74, 0xD4, 0xF4 -> cycles += 2
+            0x04, 0x44, 0x64 -> cyclesLeft += 1
+            0x14, 0x34, 0x54, 0x74, 0xD4, 0xF4 -> cyclesLeft += 2
         }
         return 0
     }
 
-    //Or with accumulator
+    // Or with accumulator
     private fun ora(): Int {
         fetch()
         registers.a = registers.a or fetched
@@ -968,13 +968,13 @@ class Cpu {
         return 1
     }
 
-    //Push accumulator
+    // Push accumulator
     private fun pha(): Int {
         push(registers.a)
         return 0
     }
 
-    //Push processor status
+    // Push processor status
     private fun php(): Int {
         registers.b = true
         push(registers.p)
@@ -982,7 +982,7 @@ class Cpu {
         return 0
     }
 
-    //Pull accumulator
+    // Pull accumulator
     private fun pla(): Int {
         registers.a = pop()
         registers.z = (registers.a and 0xFF) == 0
@@ -990,7 +990,7 @@ class Cpu {
         return 0
     }
 
-    //Pull processor status
+    // Pull processor status
     private fun plp(): Int {
         registers.p = pop()
         registers.u = true
@@ -998,7 +998,7 @@ class Cpu {
         return 0
     }
 
-    //Rotate left
+    // Rotate left
     private fun rol(): Int {
         fetch()
         val temp = if (instruction!!.addressingMode == this::imp) {
@@ -1020,7 +1020,7 @@ class Cpu {
         return 0
     }
 
-    //Rotate right
+    // Rotate right
     private fun ror(): Int {
         fetch()
         val temp = if (instruction!!.addressingMode == this::imp) {
@@ -1043,7 +1043,7 @@ class Cpu {
         return 0
     }
 
-    //Return from interrupt
+    // Return from interrupt
     private fun rti(): Int {
         registers.p = pop()
         registers.u = true
@@ -1051,14 +1051,14 @@ class Cpu {
         return 0
     }
 
-    //Return from subroutine
+    // Return from subroutine
     private fun rts(): Int {
         registers.pc = pop() or (pop() shl 8)
         ++registers.pc
         return 0
     }
 
-    //Subtract with carry
+    // Subtract with carry
     private fun sbc(): Int {
         fetch()
         val result = registers.a - fetched - (!registers.c).toInt()
@@ -1071,43 +1071,43 @@ class Cpu {
         return 1
     }
 
-    //Set carry
+    // Set carry
     private fun sec(): Int {
         registers.c = true
         return 0
     }
 
-    //Set decimal
+    // Set decimal
     private fun sed(): Int {
         registers.d = true
         return 0
     }
 
-    //Set interrupt disable
+    // Set interrupt disable
     private fun sei(): Int {
         registers.i = true
         return 0
     }
 
-    //Store accumulator
+    // Store accumulator
     private fun sta(): Int {
         write(address, registers.a)
         return 0
     }
 
-    //Store x
+    // Store x
     private fun stx(): Int {
         write(address, registers.x)
         return 0
     }
 
-    //Store y
+    // Store y
     private fun sty(): Int {
         write(address, registers.y)
         return 0
     }
 
-    //Transfer accumulator to X
+    // Transfer accumulator to X
     private fun tax(): Int {
         registers.x = registers.a
         registers.z = registers.x == 0
@@ -1115,7 +1115,7 @@ class Cpu {
         return 1
     }
 
-    //Transfer accumulator to y
+    // Transfer accumulator to y
     private fun tay(): Int {
         registers.y = registers.a
         registers.z = registers.y == 0
@@ -1123,7 +1123,7 @@ class Cpu {
         return 0
     }
 
-    //Transfer stack pointer to x
+    // Transfer stack pointer to x
     private fun tsx(): Int {
         registers.x = registers.sp
         registers.z = registers.x == 0
@@ -1131,7 +1131,7 @@ class Cpu {
         return 0
     }
 
-    //Transfer X to accumulator
+    // Transfer X to accumulator
     private fun txa(): Int {
         registers.a = registers.x
         registers.z = registers.a == 0
@@ -1139,13 +1139,13 @@ class Cpu {
         return 0
     }
 
-    //Transfer X to stack pointer
+    // Transfer X to stack pointer
     private fun txs(): Int {
         registers.sp = registers.x
         return 0
     }
 
-    //Transfer Y to accumulator
+    // Transfer Y to accumulator
     private fun tya(): Int {
         registers.a = registers.y
         registers.z = registers.a == 0
@@ -1153,9 +1153,9 @@ class Cpu {
         return 0
     }
 
-    //Unofficial opcodes------------------------------------------------------------------------------------------------
+    // Unofficial opcodes-----------------------------------------------------------------------------------------------
 
-    //LDA then TAX
+    // LDA then TAX
     private fun lax(): Int {
         fetch()
         registers.a = fetched
@@ -1166,14 +1166,14 @@ class Cpu {
         return 1
     }
 
-    //Store and of A and X
+    // Store and of A and X
     private fun sax(): Int {
         val result = registers.a and registers.x
         write(address, result)
         return 0
     }
 
-    //DEC then CMP
+    // DEC then CMP
     private fun dcp(): Int {
         fetch()
         var result = fetched - 1
@@ -1188,7 +1188,7 @@ class Cpu {
         return 0
     }
 
-    //INC then SBC
+    // INC then SBC
     private fun isc(): Int {
         fetch()
         var result = (fetched + 1) and 0xFF
@@ -1205,7 +1205,7 @@ class Cpu {
         return 0
     }
 
-    //ROL then AND
+    // ROL then AND
     private fun rla(): Int {
         fetch()
         val result = (fetched shl 1) or registers.c.toInt()
@@ -1219,7 +1219,7 @@ class Cpu {
         return 0
     }
 
-    //ROR then ADC
+    // ROR then ADC
     private fun rra(): Int {
         fetch()
         var result = (registers.c.toInt() shl 7) or (fetched shr 1)
@@ -1237,7 +1237,7 @@ class Cpu {
         return 0
     }
 
-    //ASL then ORA
+    // ASL then ORA
     private fun slo(): Int {
         fetch()
         val result = fetched shl 1
@@ -1252,7 +1252,7 @@ class Cpu {
         return 0
     }
 
-    //LSR then EOR
+    // LSR then EOR
     private fun sre(): Int {
         fetch()
         val result = fetched shr 1

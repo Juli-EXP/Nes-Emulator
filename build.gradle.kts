@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 val kotlinVersion: String by project
 val tornadoFxVersion: String by project
 
@@ -9,6 +11,11 @@ repositories {
     mavenCentral()
 }
 
+tasks.withType<KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")

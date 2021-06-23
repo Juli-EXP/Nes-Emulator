@@ -2,7 +2,7 @@ package ppu.registers
 
 import ext.toBoolean
 
-inline class PpuMask(val value: Int) {
+class PpuMask(private val value: Int) {
     val emphasizeBlue: Boolean
         get() = (value and 0x80).toBoolean()
 

@@ -3,17 +3,16 @@ package ram
 class Ram(
     size: Int
 ) {
-    //variables---------------------------------------------------------------------------------------------------------
     private val data = IntArray(size)
 
-    //reads from RAM
-    fun read(addr: Int): Int {
-        return this.data[addr]
+    // Reads data from RAM
+    fun read(address: Int): Int {
+        return this.data[address]
     }
 
-    //writes to RAM
-    fun write(addr: Int, data: Int) {
-        this.data[addr] = data
+    // Writes data to RAM
+    fun write(address: Int, data: Int) {
+        this.data[address] = data
     }
 
     override fun toString(): String {

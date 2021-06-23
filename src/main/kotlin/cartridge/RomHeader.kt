@@ -2,6 +2,7 @@ package cartridge
 
 import ext.toBoolean
 import ext.toHexString
+import java.util.*
 
 class RomHeader(private val headerBytes: ByteArray) {
     private val headerConstant = headerBytes.copyOfRange(0, 3)
@@ -20,7 +21,7 @@ class RomHeader(private val headerBytes: ByteArray) {
         get() = headerBytes.size
 
     val isValid: Boolean
-        get() = headerConstant.toHexString().toUpperCase() == iNesConstant
+        get() = headerConstant.toHexString().uppercase(Locale.getDefault()) == iNesConstant
 
     val trainerPresent: Boolean
         get() = (flag6 and 0x4).toBoolean()

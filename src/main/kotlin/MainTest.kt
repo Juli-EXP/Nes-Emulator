@@ -36,7 +36,7 @@ fun nestestTest() {
 
     do {
         cpu.clock()
-        if (cpu.cycleComplete) {
+        if (cpu.isCycleComplete) {
             //Read error codes from specific locations
             if (cpuBus.read(0x0200) != 0) {
                 //println(String.format("0x0200: 0x%02X", ram.read(0x0200)))

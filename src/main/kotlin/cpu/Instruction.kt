@@ -1,5 +1,7 @@
 package cpu
 
+import java.util.*
+
 class Instruction(
     val instruction: () -> Int,
     val addressingMode: () -> Int,
@@ -13,7 +15,7 @@ class Instruction(
             .toString()
             .substringAfter("Cpu.")
             .substring(0, 3)
-            .toUpperCase()
+            .uppercase(Locale.getDefault())
     }
 
     override fun toString(): String {

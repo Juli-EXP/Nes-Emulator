@@ -2,7 +2,7 @@ package ppu.registers
 
 import ext.toBoolean
 
-inline class PpuControl(val value: Int) {
+class PpuControl(private val value: Int) {
     val enableNmi: Boolean
         get() = (value and 0x80).toBoolean()
 
@@ -21,7 +21,7 @@ inline class PpuControl(val value: Int) {
     val incrementMode: Boolean
         get() = (value and 0x4).toBoolean()
 
-    val nametabley: Boolean
+    val nametableY: Boolean
         get() = (value and 0x2).toBoolean()
 
     val nametableX: Boolean

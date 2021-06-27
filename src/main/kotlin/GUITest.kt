@@ -1,23 +1,20 @@
+import display.Display
+import ppu.Palette2C02
 
-import ppu.Display
-import ppu.Palete2C02
 import tornadofx.View
 import tornadofx.borderpane
 
 
-class GUITest : View("Test"){
-    override val root = borderpane{
-        this.prefWidth = 800.0
-        this.prefHeight = 500.0
+class GUITest : View("Test") {
+    override val root = borderpane {
+        this.prefWidth = (Display.NTSC_DISPLAY_HEIGHT * Display.DEFAULT_DISPLAY_SCALE).toDouble()
+        this.prefHeight = (Display.NTSC_DISPLAY_WIDTH * Display.DEFAULT_DISPLAY_SCALE).toDouble()
 
-        val display = Display(prefWidth, prefHeight)
-        val c = Palete2C02.palette
+        val d = Display()
+        this.center = d
 
-        this.center = display
-
-
-        for(i in 0..100){
-            display.draw(i,3 , c[1].red, c[1].green, c[1].blue)
+        for (i in 0 until 100) {
+            d.setPixel(i, 5, Palette2C02.paletteFx[0])
         }
     }
 

@@ -16,11 +16,11 @@ class Ppu {
     private val oam: Ram = Ram(0x100)              //Object attribute memory
     private val paletteRam: Ram = Ram(0x20)        //Stores the color palette
 
-    private val paletteTable = Palete2C02.palette
+    private val paletteTable = Palette2C02.paletteFx
 
     //Displaying stuff
     private var scanline: Int = 0                       //Row
-    private var scanLineCycle: Int = 0                  //Collumn
+    private var scanLineCycle: Int = 0                  //Column
     private var frameComplete = false                   //Indicates if a full frame is complete
 
     //Registers

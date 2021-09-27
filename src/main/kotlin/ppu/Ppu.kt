@@ -16,7 +16,7 @@ class Ppu {
     private val oam: Ram = Ram(0x100)              //Object attribute memory
     private val paletteRam: Ram = Ram(0x20)        //Stores the color palette
 
-    private val paletteTable = Palette2C02.paletteFx
+    private val paletteTable = Palette2C02.paletteHex
 
     //Displaying stuff
     private var scanline: Int = 0                       //Row

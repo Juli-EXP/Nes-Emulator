@@ -21,7 +21,7 @@ fun main() {
 
         var i = 0
         while (i < values.size) {
-            code += "Color(${values[i].toInt() / 255.0}, ${values[i + 1].toInt() / 255.0}, ${values[i + 2].toInt() / 255.0}), "
+            code += "color(${values[i].toInt()} / 255.0, ${values[i + 1].toInt()} / 255.0, ${values[i + 2].toInt()} / 255.0), "
             i += 3
         }
         code += "\n"

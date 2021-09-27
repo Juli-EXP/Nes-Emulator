@@ -10,6 +10,7 @@ class Instruction(
     private val instructionString: String = toInstructionString(instruction)
     private val addressingString: String = toInstructionString(addressingMode)
 
+    //Returns the name of a function
     private fun toInstructionString(function: () -> Int): String {
         return function
             .toString()

@@ -1,4 +1,5 @@
 import cartridge.Cartridge
+import common.Constants
 import cpu.*
 import ext.toggleBit
 import ppu.Ppu
@@ -13,7 +14,7 @@ private var logFile = "logs/error.txt"
 
 private var cpu = Cpu()
 private var ppu = Ppu()
-private var ram = Ram(0x800)
+private var ram = Ram(Constants.DEFAULT_RAM_SIZE)
 private var cartridge = Cartridge("roms/nestest.nes")
 
 private var cpuBus = CpuBus(cpu, ppu, ram)
@@ -23,7 +24,7 @@ fun main() {
     test2()
 }
 
-//Test nesttest.nes rom
+//Test nestest.nes rom
 fun nestestTest() {
     cpuBus.connectCartridge(cartridge)
 
@@ -42,7 +43,7 @@ fun nestestTest() {
                 //println(String.format("0x0200: 0x%02X", ram.read(0x0200)))
                 Files.write(
                     Paths.get(logFile),
-                    String.format("0x0200: 0x%02X at: %d\n", ram.read(0x0200), cpu.totalClockCount).toByteArray(),
+                    String.format("0x0200: 0x%02X at: %d\n", ram.read(0x0200), cpu.clockCount).toByteArray(),
                     StandardOpenOption.APPEND
                 )
             }
@@ -50,12 +51,12 @@ fun nestestTest() {
                 //println(String.format("0x0300: 0x%02X", ram.read(0x0300)))
                 Files.write(
                     Paths.get(logFile),
-                    String.format("0x0300: 0x%02X at: %d\n", ram.read(0x0300), cpu.totalClockCount).toByteArray(),
+                    String.format("0x0300: 0x%02X at: %d\n", ram.read(0x0300), cpu.clockCount).toByteArray(),
                     StandardOpenOption.APPEND
                 )
             }
         }
-    } while (cpu.totalClockCount <= 26554)
+    } while (cpu.clockCount <= 26554)
 
     println("parsing log")
     parseLog()

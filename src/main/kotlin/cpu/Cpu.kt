@@ -2,9 +2,6 @@ package cpu
 
 import ext.toBoolean
 import ext.toInt
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.StandardOpenOption
 
 
 class Cpu {
@@ -19,17 +16,11 @@ class Cpu {
     private var address: Int = 0                    //Absolute address
     private var cyclesLeft: Int = 0                 //How many cycles are left
 
-    val isCycleComplete: Boolean                      //Returns true if the cpu cycle is complete
+    val isCycleComplete: Boolean                    //Returns true if the cpu cycle is complete
         get() = cyclesLeft == 0
 
-    var totalClockCount: Int = 7                    //Total clock count, currently starts at 7. TODO change later
+    var clockCount: Int = 7                         //Total clock count, starts at 7 because nestest. TODO change later
     var debug: Boolean = false                      //Enable/Disable debug mode
-
-    // TODO delete this
-    init {
-        Files.deleteIfExists(Paths.get("logs/log.txt"))
-        Files.createFile(Paths.get("logs/log.txt"))
-    }
 
     // Communication with the bus---------------------------------------------------------------------------------------
 
@@ -54,14 +45,6 @@ class Cpu {
     // Performs one clock cycle, TODO change everything
     fun clock() {
         if (cyclesLeft == 0) {
-            if (debug) {
-                Files.write(
-                    Paths.get("logs/log.txt"),
-                    String.format("PC: 0x%04X  ", registers.pc).toByteArray(),
-                    StandardOpenOption.APPEND
-                )
-            }
-
             opcode = read(registers.pc++)
             instruction = instructionTable[opcode]
 
@@ -72,34 +55,14 @@ class Cpu {
 
             cyclesLeft = instruction!!.cycles
 
+            //Executes addressing mode + instruction and checks if another cycle is needed
             val additionalCycle1 = instruction!!.addressingMode()
-
-            if (debug) {
-                Files.write(
-                    Paths.get("logs/log.txt"),
-                    (String.format("OP: 0x%02X  ", opcode) +
-                            String.format("ADDR: 0x%04X  ", address) +
-                            "$instruction" +
-                            "  " +
-                            String.format(
-                                "A: %02X  X: %02X  Y: %02X  P: %02X  SP: %02X  CYC: %d\n",
-                                registers.a,
-                                registers.x,
-                                registers.y,
-                                registers.p,
-                                registers.sp,
-                                totalClockCount
-                            )).toByteArray(),
-                    StandardOpenOption.APPEND
-                )
-            }
-
             val additionalCycle2 = instruction!!.instruction()
 
             cyclesLeft += (additionalCycle1 and additionalCycle2)
         }
 
-        ++totalClockCount
+        ++clockCount
 
         --cyclesLeft
     }
@@ -111,9 +74,9 @@ class Cpu {
         if (msg.isNotEmpty())
             debug = "$msg\n"
 
-        debug += String.format("op: 0x%02X", opcode) + ", ${instruction}\n"
+        debug += String.format("OPCODE: 0x%02X", opcode) + ", ${instruction}\n"
         debug += "Current status:\n"
-        debug += String.format("addr: 0x%04X", address) + "\n"
+        debug += String.format("ADDRESS: 0x%04X", address) + "\n"
         debug += registers.toString() + "\n"
         print(debug)
     }
@@ -121,9 +84,9 @@ class Cpu {
     // Resets the CPU
     fun reset() {
         // Reset clock count
-        totalClockCount = 0
+        clockCount = 0
 
-        // Set program counter
+        // Set program counter to the value at 0xFFFC
         address = 0xFFFC
 
         val lo = read(address + 0)
@@ -132,11 +95,7 @@ class Cpu {
         registers.pc = (hi shl 8) or lo
 
         // Reset registers
-        registers.a = 0
-        registers.x = 0
-        registers.y = 0
-        registers.sp = 0xFD
-        registers.resetStatus()
+        registers.reset()
 
         // Reset any other var
         address = 0
@@ -158,7 +117,7 @@ class Cpu {
             registers.i = true
             push(registers.p)
 
-            //Set program counter to the value stored at FFFE
+            //Set program counter to the value stored at 0xFFFE
             address = 0xFFFE
             val lo = read(address)
             val hi = read(address + 1)
@@ -181,7 +140,7 @@ class Cpu {
         registers.i = true
         push(registers.p)
 
-        // Set program counter to the value stored at FFFA
+        // Set program counter to the value stored at 0xFFFA
         address = 0xFFFA
         val lo = read(address)
         val hi = read(address + 1)

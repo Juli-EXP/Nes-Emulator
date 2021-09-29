@@ -2,7 +2,7 @@ package ppu.registers
 
 import ext.toBoolean
 
-class PpuControl(private val value: Int) {
+class PpuControl(var value: Int) {
     val enableNmi: Boolean
         get() = (value and 0x80).toBoolean()
 

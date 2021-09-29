@@ -8,8 +8,8 @@ class RomHeader(private val headerBytes: ByteArray) {
     private val headerConstant = headerBytes.copyOfRange(0, 3)
     val prgBanks = headerBytes[4].toInt()
     val chrBanks = headerBytes[5].toInt()
-    val prgSize = prgBanks * 0x4000   //times 16KB
-    val chrSize = chrBanks * 0x2000   //times 8 KB
+    val prgSize = prgBanks * 0x4000   // times 16 KB
+    val chrSize = chrBanks * 0x2000   // times 8 KB
     private val flag6 = headerBytes[6].toInt()
     private val flag7 = headerBytes[7].toInt()
     private val flag8 = headerBytes[8].toInt()
@@ -28,9 +28,9 @@ class RomHeader(private val headerBytes: ByteArray) {
 
     val mirroring: Mirroring
         get() {
-            return if((flag6 and 0x4).toBoolean()){
+            return if ((flag6 and 0x4).toBoolean()) {
                 Mirroring.VERTICAL
-            }else{
+            } else {
                 Mirroring.HORIZONTAL
             }
         }

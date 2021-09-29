@@ -2,7 +2,7 @@ package ppu.registers
 
 import ext.toBoolean
 
-class PpuStatus(val value: Int) {
+class PpuStatus(var value: Int) {
     val verticalBlank: Boolean
         get() = (value and 0x80).toBoolean()
 

@@ -4,21 +4,21 @@ abstract class Mapper(
     protected val prgBanks: Int,
     protected val chrBanks: Int
 ) {
-    //All methods return null if the operation is not permited
+    //The methods return null if the operation is not permitted
 
-    open fun cpuRead(addr: Int): Int? {
+    open fun cpuRead(address: Int): Int? {
         return null
     }
 
-    open fun cpuWrite(addr: Int): Int? {
+    open fun cpuWrite(address: Int): Int? {
         return null
     }
 
-    open fun ppuRead(addr: Int): Int? {
+    open fun ppuRead(address: Int): Int? {
         return null
     }
 
-    open fun ppuWrite(addr: Int): Int? {
+    open fun ppuWrite(address: Int): Int? {
         return null
     }
 }

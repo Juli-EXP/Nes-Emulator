@@ -1,9 +1,9 @@
 package ram
 
 class Ram(
-    size: Int
+    private val size: Int
 ) {
-    private val data = IntArray(size)
+    private var data = IntArray(size)
 
     // Reads data from RAM
     fun read(address: Int): Int {
@@ -13,6 +13,11 @@ class Ram(
     // Writes data to RAM
     fun write(address: Int, data: Int) {
         this.data[address] = data
+    }
+
+    // Clears the RAM
+    fun clear() {
+        data = IntArray(size)
     }
 
     override fun toString(): String {

@@ -1,18 +1,19 @@
 package cpu
 
 import cartridge.Cartridge
+import common.Constants
 import ram.Ram
 import ppu.Ppu
 
 class CpuBus(
-    private val cpu: Cpu,
-    private val ppu: Ppu,
-    private val ram: Ram
+    private val cpu: Cpu = Cpu(),
+    private val ppu: Ppu = Ppu(),
+    private val ram: Ram = Ram(Constants.DEFAULT_RAM_SIZE)
 ) {
     private lateinit var cartridge: Cartridge
     private var totalClockCount: Int = 0
 
-    // Connects the the CPU to the bus
+    // Connects the CPU to the bus
     init {
         cpu.connectBus(this)
     }
@@ -40,7 +41,7 @@ class CpuBus(
             in 0x2000..0x3FFF -> ppu.cpuWrite(address % 0x8, data and 0xFF)
             //Family Basic only
             in 0x6000..0x7FFF -> println("Illegal write operation at ${String.format("0x%04X", address)}")
-            //Tries to write to Cartridge
+            //Tries to write to Cartridge if possible
             in 0x8000..0xFFFF -> cartridge.cpuWrite(address, data and 0xFF)
         }
     }
@@ -56,18 +57,18 @@ class CpuBus(
     fun reset() {
         totalClockCount = 0
         cpu.reset()
-        ppu.reset()
     }
 
     // Performs one clock cycle
     fun clock() {
         ppu.clock()
-        // CPU works at a third of the PPU speed
-        if(totalClockCount % 3 == 0){
+
+        // CPU runs at a third of the PPU speed
+        if (totalClockCount % 3 == 0) {
             cpu.clock()
         }
 
-        if(ppu.nonMaskableInterrupt){
+        if (ppu.nonMaskableInterrupt) {
             ppu.nonMaskableInterrupt = false
             cpu.nonMaskableInterrupt()
         }

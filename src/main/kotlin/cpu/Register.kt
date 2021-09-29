@@ -4,22 +4,22 @@ import ext.toBoolean
 import ext.toInt
 
 class Register {
-    var a = 0       //Accumulator register
-    var x = 0       //X register
-    var y = 0       //Y register
-    var sp = 0xFD   //Stack pointer
-    var pc = 0      //Program counter
+    var a = 0       // Accumulator register
+    var x = 0       // X register
+    var y = 0       // Y register
+    var sp = 0xFD   // Stack pointer
+    var pc = 0      // Program counter
 
-    var c = false   //Carry
-    var z = false   //Zero
-    var i = true    //Disable interrupts
-    var d = false   //Decimal mode
-    var b = false   //Break
-    var u = true    //Unused
-    var v = false   //Overflow
-    var n = false   //Negative
+    var c = false   // Carry
+    var z = false   // Zero
+    var i = true    // Disable interrupts
+    var d = false   // Decimal mode
+    var b = false   // Break            //Maybe set this to true TODO
+    var u = true    // Unused
+    var v = false   // Overflow
+    var n = false   // Negative
 
-    var p: Int //Status register as one byte
+    var p: Int  // Status register as one byte
         get() = (c.toInt()) or
                 (z.toInt() shl 1) or
                 (i.toInt() shl 2) or
@@ -39,7 +39,12 @@ class Register {
             n = (value and 0x80).toBoolean()
         }
 
-    fun resetStatus() {
+    fun reset() {
+        a = 0
+        x = 0
+        y = 0
+        sp = 0xFD
+
         c = false
         z = false
         i = true
@@ -51,12 +56,12 @@ class Register {
     }
 
     override fun toString(): String {
-        return "a: $a, x: $x, y: $y\n" +
-                "${String.format("sp: 0x%04X", sp)}, " +
-                "${String.format("pc: 0x%04X", pc)}\n" +
-                "c: $c, z: $z, i: $i\n" +
-                "d: $d, b: $b, u: $u\n" +
-                "v: $v, b: $b"
+        return "A: $a, X: $x, Y: $y, ${String.format("P: 0x%02X", p)}\n" +
+                "${String.format("SP: 0x%04X", sp)}, " +
+                "${String.format("PC: 0x%04X", pc)}\n" +
+                "C: $c, Z: $z, I: $i\n" +
+                "D: $d, B: $b, U: $u\n" +
+                "V: $v, N: $n"
     }
 
 
